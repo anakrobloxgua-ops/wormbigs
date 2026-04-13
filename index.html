@@ -503,21 +503,36 @@ async function sendMessage() {
   await new Promise(r => setTimeout(r, 2000));
 
   try {
-    const msgs = currentConv.map(c => ({ role: c.role, content: c.content }));
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY },
-      body: JSON.stringify({ model: 'gpt-3.5-turbo', messages: [{ role: 'system', content: getModeSystem() }, ...msgs], max_tokens: 1500 })
-    });
-    const data = await res.json();
-    hideTyping();
-    const reply = data.choices?.[0]?.message?.content || 'Maaf, ada gangguan. Coba lagi ya! 🙏';
-    appendMsg('ai', reply);
-    currentConv.push({ role: 'assistant', content: reply });
-  } catch(e) {
-    hideTyping();
-    appendMsg('ai', 'Koneksi bermasalah nih. Cek API key & internet kamu ya! 🔧');
+  const msgs = currentConv.map(c => ({ role: c.role, content: c.content }));
+
+  const res = await fetch('http://168.144.40.232:3000/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      messages: [{ role: 'system', content: getModeSystem() }, ...msgs]
+    })
+  });
+
+  const data = await res.json();
+
+  hideTyping();
+
+  if (!data || !data.choices) {
+    appendMsg('ai', '❌ API gak ngasih respon bro');
+    return;
   }
+
+  const reply = data.choices[0].message.content;
+  appendMsg('ai', reply);
+  currentConv.push({ role: 'assistant', content: reply });
+
+} catch (e) {
+  console.log("ERROR:", e);
+  hideTyping();
+  appendMsg('ai', '❌ Gagal connect ke VPS / API');
+}
 
   isTyping = false;
   document.getElementById('send-btn').disabled = false;
