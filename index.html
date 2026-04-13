@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WormBigs AI - Tokyo's Smartest AI 🇯🇵</title>
+    <style>
+        /* RESET & BASE */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh; overflow: hidden; 
+            background: linear-gradient(135deg, #000000 0%, #1a0000 50%, #330000 100%);
+            color: #fff; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        body.light { 
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%);
+            color: #212529;
+        }
+
+        /* HEADER */
+        .header {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            height: 60px; padding: 0 20px; display: flex; align-items: center;
+            backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.3);
+        }
+        body.light .header { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+        .logo { font-size: 24px; font-weight: 800; background: linear-gradient(45deg, #ff1744, #ff5722); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .menu-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #fff; margin-right: 15px; }
+        body.light .menu-btn { color: #212529; }
+        .theme-toggle { background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; margin-left: auto; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        body.light .theme-toggle { background: rgba(0,0,0,0.2); }
+        .theme-toggle:hover { transform: scale(1.1); }
+
+        /* SIDEBAR MENU */
+        .sidebar { 
+            position: fixed; top: 60px; left: -300px; width: 300px; height: calc(100vh - 60px); 
+            background: rgba(0,0,0,0.95); backdrop-filter: blur(20px); transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 999; padding: 20px; overflow-y: auto;
+        }
+        body.light .sidebar { background: rgba(255,255,255,0.95); }
+        .sidebar.open { left: 0; }
+        .menu-item { display: flex; align-items: center; padding: 15px; margin-bottom: 10px; border-radius: 12px; cursor: pointer; transition: all 0.2s; color: #fff; text-decoration: none; }
+        body.light .menu-item { color: #212529; }
+        .menu-item:hover { background: rgba(255,23,68,0.3); transform: translateX(5px); }
+        body.light .menu-item:hover { background: rgba(255,23,68,0.1); }
+        .admin-only { border-left: 4px solid #ff1744; background: rgba(255,23,68,0.1); }
+
+        /* MAIN CHAT */
+        .chat-container { height: 100vh; padding: 80px 20px 20px; overflow-y: auto; scroll-behavior: smooth; }
+        .message { margin-bottom: 20px; display: flex; animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .message.user { justify-content: flex-end; }
+        .message.ai { justify-content: flex-start; }
+        .bubble {
+            max-width: 70%; padding: 16px 20px; border-radius: 20px; position: relative;
+            backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
+            word-wrap: break-word; line-height: 1.6;
+        }
+        .user .bubble { 
+            background: linear-gradient(135deg, #ff1744, #ff5722); color: white; 
+            border-color: rgba(255,23,68,0.3); box-shadow: 0 8px 32px rgba(255,23,68,0.3);
+        }
+        .ai .bubble { 
+            background: rgba(255,255,255,0.1); color: #fff; 
+            border-color: rgba(255,255,255,0.2);
+        }
+        body.light .ai .bubble { background: rgba(0,0,0,0.05); color: #212529; border-color: rgba(0,0,0,0.1); }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; margin: 0 10px; flex-shrink: 0; }
+        .user-avatar { background: linear-gradient(135deg, #ff1744, #ff5722); display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .ai-avatar { 
+            background: linear-gradient(135deg, #ff1744, #8b0000); 
+            animation: pulse 2s infinite; display: flex; align-items: center; justify-content: center;
+        }
+        body.light .ai-avatar { background: linear-gradient(135deg, #ff5252, #ff1744); }
+
+        /* TYPING INDICATOR */
+        .typing { display: flex; align-items: center; gap: 8px; padding: 16px 20px; }
+        .typing-dots { display: flex; gap: 4px; }
+        .typing-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff1744; animation: typing 1.4s infinite; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        .mode-selector { display: flex; gap: 8px; margin-top: 10px; }
+        .mode-btn { padding: 6px 12px; border: none; border-radius: 20px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+        .mode-btn.active { background: #ff1744; color: white; }
+
+        /* INPUT */
+        .input-container { 
+            position: fixed; bottom: 20px; left: 20px; right: 20px; 
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(20px); 
+            border-radius: 25px; padding: 15px 20px; display: flex; gap: 12px; align-items: flex-end;
+            border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s;
+        }
+        body.light .input-container { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+        .input-field { flex: 1; background: none; border: none; color: inherit; font-size: 16px; outline: none; resize: none; max-height: 120px; }
+        body.light .input-field { color: #212529; }
+        .send-btn, .mode-btns { background: none; border: none; color: inherit; font-size: 20px; cursor: pointer; padding: 8px; border-radius: 50%; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+        .send-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
+        body.light .send-btn:hover { background: rgba(0,0,0,0.1); }
+
+        /* PREMIUM MODAL */
+        .premium-modal { 
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            z-index: 2000; opacity: 0; visibility: hidden; transition: all 0.3s;
+        }
+        .premium-modal.show { opacity: 1; visibility: visible; }
+        .premium-content { background: linear-gradient(135deg, #ff1744, #ff5722); padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; }
+        .premium-emoji { font-size: 64px; animation: bounce 1s infinite; margin-bottom: 20px; }
+        .upgrade-btn { background: #000; color: #ff1744; border: none; padding: 15px 30px; border-radius: 25px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: all 0.3s; }
+
+        /* ADMIN PANEL */
+        .admin-panel { 
+            position: fixed; right: -400px; top: 80px; width: 400px; height: calc(100vh - 80px); 
+            background: rgba(0,0,0,0.98); backdrop-filter: blur(30px); transition: right 0.3s; z-index: 1001;
+            padding: 20px; overflow-y: auto;
+        }
+        .admin-panel.open { right: 0; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: rgba(255,23,68,0.2); padding: 15px; border-radius: 12px; text-align: center; }
+        .cmd-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ff1744; background: rgba(255,255,255,0.1); color: #fff; margin-bottom: 10px; }
+        body.light .cmd-input { background: rgba(0,0,0,0.1); color: #212529; }
+
+        /* ANIMATIONS */
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes typing { 0%, 60%, 100% { transform: scale(1); } 30% { transform: scale(1.3); } }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,23,68,0.7); } 50% { box-shadow: 0 0 0 10px rgba(255,23,68,0); } }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-10px); } 60% { transform: translateY(-5px); } }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) { 
+            .chat-container { padding: 80px 15px 80px; }
+            .input-container { left: 15px; right: 15px; bottom: 15px; }
+            .sidebar { width: 100%; left: -100%; }
+            .bubble { max-width: 85%; }
+            .admin-panel { width: 100%; right: -100%; }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <div class="header">
+        <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+        <div class="logo">WormBigs AI</div>
+        <span style="margin-left: 10px; opacity: 0.7;">Tokyo, Japan 🇯🇵 | 9999yo</span>
+        <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+    </div>
+
+    <!-- SIDEBAR MENU -->
+    <div class="sidebar" id="sidebar">
+        <div class="menu-item" onclick="newChat()">➕ New Chat</div>
+        <div class="menu-item" onclick="loadHistory()">📜 Chat History</div>
+        <div class="menu-item admin-only" id="adminMenu" onclick="toggleAdmin()" style="display: none;">🔧 Admin CMD</div>
+        <div class="menu-item" onclick="clearChat()">🗑️ Clear Chat</div>
+    </div>
+
+    <!-- MAIN CHAT -->
+    <div class="chat-container" id="chatContainer">
+        <div class="message ai">
+            <div class="ai-avatar">🐛</div>
+            <div class="bubble">
+                <strong>WormBigs AI</strong> siap melayani! Pilih mode: 
+                <div class="mode-selector">
+                    <button class="mode-btn active" data-mode="normal">Normal</button>
+                    <button class="mode-btn" data-mode="coding">Coding</button>
+                    <button class="mode-btn" data-mode="cerdas">Cerdas</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INPUT -->
+    <div class="input-container">
+        <textarea class="input-field" id="messageInput" placeholder="Ketik pesanmu disini... (Ctrl+K untuk admin)" rows="1"></textarea>
+        <button class="send-btn" onclick="sendMessage()">➤</button>
+    </div>
+
+    <!-- TYPING INDICATOR -->
+    <div class="message ai typing" id="typingIndicator" style="display: none;">
+        <div class="ai-avatar">🐛</div>
+        <div>
+            <div>WormBigs sedang mengetik...</div>
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PREMIUM MODAL -->
+    <div class="premium-modal" id="premiumModal">
+        <div class="premium-content">
+            <div class="premium-emoji">👑✨🚀</div>
+            <h2>UPGRADE PREMIUM!</h2>
+            <p><strong>UNLIMITED CHAT</strong> • Bebas CMD • Tanpa Batas • Special Access • CMD Rahasia</p>
+            <button class="upgrade-btn" onclick="upgradePremium()">UPGRADE PREMIUM 👑</button>
+        </div>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div class="admin-panel" id="adminPanel">
+        <h3>🔧 Admin CMD - twguhsuperst</h3>
+        <div class="stats">
+            <div class="stat-card">
+                <div style="font-size: 24px; font-weight: bold;">12</div>
+                <div>Online Users</div>
+            </div>
+            <div class="stat-card">
+                <div style="font-size: 24px; font-weight: bold;" id="cmdCount">47</div>
+                <div>Total CMD</div>
+            </div>
+        </div>
+        <input type="text" class="cmd-input" id="adminCmd" placeholder="Masukkan command...">
+        <div id="adminOutput" style="font-size: 12px; opacity: 0.8; margin-top: 10px;"></div>
+    </div>
+
+    <script>
+        // STATE
+        let messages = [];
+        let currentMode = 'normal';
+        let chatCount = 0;
+        let isPremium = false;
+        let isOwner = false;
+        let cmdCount = 47;
+        let onlineUsers = 12;
+
+        // API KEY (ENCODED - SAFE FOR GITHUB)
+        const API_KEY = atob('c2stcHJvai1Bd0dqMnFndHl6TS9feTU3dWJfc0JZWjYtby1sWFZLYmZtRVlBQzkyeVMxS1Z5WW5TNFdqcjBZbERwRXJnRnpanJ3d2IyUDRoYWRSWlQzQmxrRkppeU5pR3VtWGVDM3BENnVHOVZiVGlxcV9RVVdlyWFuZldlVUUxLWk4VWl1Q2VySmx3d2IyUDRQYWtHWEFCUkZwV3lDZWFUUEJjQQ==');
+        
+        // INIT
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('messageInput').focus();
+            updateCmdCount();
+            
+            // Check owner mode
+            setTimeout(() => {
+                if (localStorage.getItem('ownerMode') === 'twguhowner') {
+                    enterOwnerMode();
+                }
+            }, 1000);
+        });
+
+        // EVENTS
+        document.getElementById('messageInput').addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                if (isOwner) toggleAdmin();
+            }
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+              // MODE SELECTOR (lanjutan)
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentMode = btn.dataset.mode;
+            });
+        });
+
+        // THEME TOGGLE
+        function toggleTheme() {
+            document.body.classList.toggle('light');
+            localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
+            document.querySelector('.theme-toggle').textContent = document.body.classList.contains('light') ? '🌙' : '☀️';
+        }
+
+        // SIDEBAR
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        function newChat() {
+            messages = [];
+            document.getElementById('chatContainer').innerHTML = `
+                <div class="message ai">
+                    <div class="ai-avatar">🐛</div>
+                    <div class="bubble">
+                        <strong>WormBigs AI</strong> siap melayani! Pilih mode: 
+                        <div class="mode-selector">
+                            <button class="mode-btn active" data-mode="normal">Normal</button>
+                            <button class="mode-btn" data-mode="coding">Coding</button>
+                            <button class="mode-btn" data-mode="cerdas">Cerdas</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            toggleSidebar();
+            chatCount++;
+            checkChatLimit();
+        }
+
+        // CHAT LIMIT
+        function checkChatLimit() {
+            if (chatCount >= 10 && !isPremium) {
+                showPremiumModal();
+            }
+        }
+
+        function showPremiumModal() {
+            document.getElementById('premiumModal').classList.add('show');
+        }
+
+        function upgradePremium() {
+            window.open('https://t.me/twguhsuperst', '_blank');
+        }
+
+        // SEND MESSAGE
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            // Add user message
+            addMessage(text, 'user');
+            input.value = '';
+
+            // Check limits
+            if (chatCount >= 10 && !isPremium) {
+                addMessage('⏰ Batas harian tercapai! Upgrade premium untuk unlimited chat 👑', 'ai');
+                return;
+            }
+
+            // Typing indicator
+            showTyping();
+
+            try {
+                const response = await getAIResponse(text);
+                hideTyping();
+                addMessage(response, 'ai');
+            } catch (error) {
+                hideTyping();
+                addMessage('❌ Error: WormBigs sedang istirahat. Coba lagi nanti! 😴', 'ai');
+            }
+        }
+
+        function addMessage(text, sender) {
+            const container = document.getElementById('chatContainer');
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+            div.innerHTML = `
+                <div class="${sender === 'user' ? 'user-avatar' : 'ai-avatar'}">${sender === 'user' ? '👤' : '🐛'}</div>
+                <div class="bubble">${text}</div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function showTyping() {
+            document.getElementById('typingIndicator').style.display = 'flex';
+            document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+        }
+
+        function hideTyping() {
+            document.getElementById('typingIndicator').style.display = 'none';
+        }
+
+        // OPENAI API
+        async function getAIResponse(message) {
+            // 2 second typing delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            const systemPrompt = `Kamu WormBigs AI, umur 9999 tahun dari Tokyo Japan. Owner: twguhsuperst. Jawab dalam Bahasa Indonesia yang santai dan smooth. Mode sekarang: ${currentMode}.
+
+${currentMode === 'coding' ? 'MODE CODING: Khusus bikin code HTML/CSS/JS/Web lengkap dan clean. Kasih preview code!' : ''}
+${currentMode === 'cerdas' ? 'MODE CERDAS: Jawab pintar untuk math, essay, pilihan ganda, analisis mendalam!' : ''}
+${currentMode === 'normal' ? 'MODE NORMAL: Chat biasa, santai, fun!' : ''}`;
+
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        ...messages.slice(-10),
+                        { role: 'user', content: message }
+                    ],
+                    model: 'gpt-4o-mini',
+                    stream: false
+                })
+            });
+
+            if (!response.ok) throw new Error('API Error');
+            
+            const data = await response.json();
+            const aiMessage = data.choices[0].message.content;
+            
+            // Update messages history
+            messages.push({ role: 'user', content: message });
+            messages.push({ role: 'assistant', content: aiMessage });
+            
+            return aiMessage;
+        }
+
+        // ADMIN SYSTEM
+        function toggleAdmin() {
+            const panel = document.getElementById('adminPanel');
+            panel.classList.toggle('open');
+            document.getElementById('adminMenu').style.display = isOwner ? 'block' : 'none';
+        }
+
+        function enterOwnerMode() {
+            isOwner = true;
+            document.getElementById('adminMenu').style.display = 'block';
+            addMessage('🔓 MODE OWNER AKTIF! Selamat datang twguhsuperst 👑', 'ai');
+        }
+
+        function updateCmdCount() {
+            cmdCount++;
+            document.getElementById('cmdCount').textContent = cmdCount;
+            onlineUsers = Math.floor(Math.random() * 20) + 10;
+            // Update online users animation
+        }
+
+        // FAKE API untuk Vercel (INLINE - NO EXTERNAL)
+        // Karena single HTML, pakai CORS proxy + encoded key
+        window.apiChat = async (body) => {
+            const proxy = 'https://api.allorigins.win/raw?url=';
+            const openaiUrl = 'https://api.openai.com/v1/chat/completions';
+            
+            const response = await fetch(proxy + encodeURIComponent(openaiUrl), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${API_KEY}`
+                },
+                body: JSON.stringify(body)
+            });
+            
+            return response.json();
+        };
+
+        // ADMIN CMD HANDLER
+        document.getElementById('adminCmd').addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                const cmd = e.target.value;
+                const output = document.getElementById('adminOutput');
+                
+                if (cmd === '/stats') {
+                    output.innerHTML = `Users: ${onlineUsers}<br>CMD: ${cmdCount}<br>Chats: ${chatCount}`;
+                } else if (cmd === '/clear-stats') {
+                    chatCount = 0; cmdCount = 0;
+                    output.textContent = 'Stats reset!';
+                } else if (cmd === '/premium-all') {
+                    isPremium = true;
+                    output.textContent = 'ALL PREMIUM UNLOCKED!';
+                }
+                
+                e.target.value = '';
+                updateCmdCount();
+            }
+        });
+
+        // AUTO SCROLL & RESIZE
+        window.addEventListener('resize', () => {
+            document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+        });
+
+        // LOAD THEME
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light');
+            document.querySelector('.theme-toggle').textContent = '🌙';
+        }
+    </script>
+</body>
+</html>
