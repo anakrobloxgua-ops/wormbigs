@@ -286,7 +286,15 @@ html,body { height:100%; overflow:hidden; font-family:var(--font); background:va
 
 <script>
 const TELEGRAM = 'https://t.me/kalzxxw';
-const API_KEY = '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';
+const res = await fetch('http://168.144.40.232:3000/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    messages: [{ role: 'system', content: getModeSystem() }, ...msgs]
+  })
+});
 const OWNER_CMD = 'twguhowner';
 const DAILY_LIMIT = 10;
 
