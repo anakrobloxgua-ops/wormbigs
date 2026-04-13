@@ -286,15 +286,6 @@ html,body { height:100%; overflow:hidden; font-family:var(--font); background:va
 
 <script>
 const TELEGRAM = 'https://t.me/kalzxxw';
-const res = await fetch('http://168.144.40.232:3000/chat', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    messages: [{ role: 'system', content: getModeSystem() }, ...msgs]
-  })
-});
 const OWNER_CMD = 'twguhowner';
 const DAILY_LIMIT = 10;
 
