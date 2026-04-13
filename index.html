@@ -1,470 +1,532 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WormBigs AI - Tokyo's Smartest AI 🇯🇵</title>
-    <style>
-        /* RESET & BASE */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            height: 100vh; overflow: hidden; 
-            background: linear-gradient(135deg, #000000 0%, #1a0000 50%, #330000 100%);
-            color: #fff; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        body.light { 
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%);
-            color: #212529;
-        }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>WormBigs AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --red: #e53935;
+  --red-dark: #b71c1c;
+  --red-glow: rgba(229,57,53,0.25);
+  --bg: #0a0a0a;
+  --bg2: #111111;
+  --bg3: #1a1a1a;
+  --bg4: #222222;
+  --border: rgba(229,57,53,0.2);
+  --text: #f0f0f0;
+  --text2: #aaaaaa;
+  --text3: #666666;
+  --bubble-ai: #1a1a1a;
+  --bubble-user: #b71c1c;
+  --sidebar-w: 260px;
+  --font: 'Space Grotesk', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --trans: 0.25s cubic-bezier(.4,0,.2,1);
+}
+.light {
+  --bg: #fafafa;
+  --bg2: #ffffff;
+  --bg3: #f0f0f0;
+  --bg4: #e8e8e8;
+  --border: rgba(229,57,53,0.18);
+  --text: #111111;
+  --text2: #555555;
+  --text3: #999999;
+  --bubble-ai: #f0f0f0;
+  --bubble-user: #e53935;
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; overflow:hidden; font-family:var(--font); background:var(--bg); color:var(--text); transition:background var(--trans),color var(--trans); }
 
-        /* HEADER */
-        .header {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-            height: 60px; padding: 0 20px; display: flex; align-items: center;
-            backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.1);
-            background: rgba(0,0,0,0.3);
-        }
-        body.light .header { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
-        .logo { font-size: 24px; font-weight: 800; background: linear-gradient(45deg, #ff1744, #ff5722); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .menu-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #fff; margin-right: 15px; }
-        body.light .menu-btn { color: #212529; }
-        .theme-toggle { background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; margin-left: auto; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
-        body.light .theme-toggle { background: rgba(0,0,0,0.2); }
-        .theme-toggle:hover { transform: scale(1.1); }
+/* SIDEBAR */
+#sidebar {
+  position:fixed; top:0; left:0; width:var(--sidebar-w); height:100%;
+  background:var(--bg2); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; z-index:200;
+  transform:translateX(-100%); transition:transform var(--trans);
+}
+#sidebar.open { transform:translateX(0); }
+#sidebar-header { padding:20px 16px 12px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+#sidebar-logo { font-size:18px; font-weight:700; color:var(--red); letter-spacing:-0.5px; }
+#sidebar-close { background:none; border:none; color:var(--text2); font-size:20px; cursor:pointer; padding:4px; border-radius:6px; transition:all var(--trans); }
+#sidebar-close:hover { background:var(--bg3); color:var(--text); }
+#sidebar-menu { flex:1; overflow-y:auto; padding:12px 8px; display:flex; flex-direction:column; gap:4px; }
+.menu-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:14px; color:var(--text2); transition:all var(--trans); border:none; background:none; width:100%; text-align:left; }
+.menu-item:hover { background:var(--bg3); color:var(--text); }
+.menu-item.active { background:var(--bg3); color:var(--text); }
+.menu-item .icon { font-size:16px; width:20px; text-align:center; }
+.menu-divider { height:1px; background:var(--border); margin:8px 4px; }
+#chat-history { flex:1; display:flex; flex-direction:column; gap:2px; }
+.hist-item { padding:8px 12px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:all var(--trans); border:none; background:none; text-align:left; }
+.hist-item:hover { background:var(--bg3); color:var(--text); }
+#admin-section { display:none; padding:12px 8px; border-top:1px solid var(--border); }
+#admin-section.visible { display:block; }
+.admin-title { font-size:11px; font-weight:600; color:var(--red); text-transform:uppercase; letter-spacing:1px; padding:0 4px 8px; }
+.admin-stat { display:flex; justify-content:space-between; align-items:center; padding:6px 12px; background:var(--bg3); border-radius:var(--radius-sm); margin-bottom:4px; font-size:13px; }
+.stat-val { font-weight:700; color:var(--red); font-family:var(--mono); }
+.live-dot { width:6px; height:6px; border-radius:50%; background:#22c55e; display:inline-block; margin-right:4px; animation:pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
 
-        /* SIDEBAR MENU */
-        .sidebar { 
-            position: fixed; top: 60px; left: -300px; width: 300px; height: calc(100vh - 60px); 
-            background: rgba(0,0,0,0.95); backdrop-filter: blur(20px); transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 999; padding: 20px; overflow-y: auto;
-        }
-        body.light .sidebar { background: rgba(255,255,255,0.95); }
-        .sidebar.open { left: 0; }
-        .menu-item { display: flex; align-items: center; padding: 15px; margin-bottom: 10px; border-radius: 12px; cursor: pointer; transition: all 0.2s; color: #fff; text-decoration: none; }
-        body.light .menu-item { color: #212529; }
-        .menu-item:hover { background: rgba(255,23,68,0.3); transform: translateX(5px); }
-        body.light .menu-item:hover { background: rgba(255,23,68,0.1); }
-        .admin-only { border-left: 4px solid #ff1744; background: rgba(255,23,68,0.1); }
+/* OVERLAY */
+#overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:199; opacity:0; pointer-events:none; transition:opacity var(--trans); }
+#overlay.show { opacity:1; pointer-events:all; }
 
-        /* MAIN CHAT */
-        .chat-container { height: 100vh; padding: 80px 20px 20px; overflow-y: auto; scroll-behavior: smooth; }
-        .message { margin-bottom: 20px; display: flex; animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .message.user { justify-content: flex-end; }
-        .message.ai { justify-content: flex-start; }
-        .bubble {
-            max-width: 70%; padding: 16px 20px; border-radius: 20px; position: relative;
-            backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
-            word-wrap: break-word; line-height: 1.6;
-        }
-        .user .bubble { 
-            background: linear-gradient(135deg, #ff1744, #ff5722); color: white; 
-            border-color: rgba(255,23,68,0.3); box-shadow: 0 8px 32px rgba(255,23,68,0.3);
-        }
-        .ai .bubble { 
-            background: rgba(255,255,255,0.1); color: #fff; 
-            border-color: rgba(255,255,255,0.2);
-        }
-        body.light .ai .bubble { background: rgba(0,0,0,0.05); color: #212529; border-color: rgba(0,0,0,0.1); }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; margin: 0 10px; flex-shrink: 0; }
-        .user-avatar { background: linear-gradient(135deg, #ff1744, #ff5722); display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .ai-avatar { 
-            background: linear-gradient(135deg, #ff1744, #8b0000); 
-            animation: pulse 2s infinite; display: flex; align-items: center; justify-content: center;
-        }
-        body.light .ai-avatar { background: linear-gradient(135deg, #ff5252, #ff1744); }
+/* MAIN */
+#main { height:100%; display:flex; flex-direction:column; transition:margin var(--trans); }
 
-        /* TYPING INDICATOR */
-        .typing { display: flex; align-items: center; gap: 8px; padding: 16px 20px; }
-        .typing-dots { display: flex; gap: 4px; }
-        .typing-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff1744; animation: typing 1.4s infinite; }
-        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-        .mode-selector { display: flex; gap: 8px; margin-top: 10px; }
-        .mode-btn { padding: 6px 12px; border: none; border-radius: 20px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
-        .mode-btn.active { background: #ff1744; color: white; }
+/* TOPBAR */
+#topbar { display:flex; align-items:center; justify-content:space-between; padding:0 16px; height:56px; border-bottom:1px solid var(--border); background:var(--bg2); flex-shrink:0; }
+#menu-btn { background:none; border:none; cursor:pointer; padding:8px; border-radius:var(--radius-sm); color:var(--text); transition:all var(--trans); display:flex; flex-direction:column; gap:5px; }
+#menu-btn:hover { background:var(--bg3); }
+#menu-btn span { display:block; width:20px; height:2px; background:var(--text); border-radius:2px; transition:all var(--trans); }
+#topbar-center { display:flex; align-items:center; gap:8px; }
+#topbar-logo { font-size:18px; font-weight:700; color:var(--red); }
+#topbar-badge { font-size:10px; background:var(--red); color:#fff; padding:2px 6px; border-radius:20px; font-weight:600; }
+#topbar-right { display:flex; align-items:center; gap:8px; }
+#theme-btn { background:none; border:1px solid var(--border); color:var(--text2); padding:6px 10px; border-radius:var(--radius-sm); cursor:pointer; font-size:13px; transition:all var(--trans); font-family:var(--font); }
+#theme-btn:hover { border-color:var(--red); color:var(--red); }
 
-        /* INPUT */
-        .input-container { 
-            position: fixed; bottom: 20px; left: 20px; right: 20px; 
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(20px); 
-            border-radius: 25px; padding: 15px 20px; display: flex; gap: 12px; align-items: flex-end;
-            border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s;
-        }
-        body.light .input-container { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
-        .input-field { flex: 1; background: none; border: none; color: inherit; font-size: 16px; outline: none; resize: none; max-height: 120px; }
-        body.light .input-field { color: #212529; }
-        .send-btn, .mode-btns { background: none; border: none; color: inherit; font-size: 20px; cursor: pointer; padding: 8px; border-radius: 50%; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
-        .send-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
-        body.light .send-btn:hover { background: rgba(0,0,0,0.1); }
+/* MODE SELECTOR */
+#mode-bar { display:flex; gap:4px; padding:10px 16px; background:var(--bg2); border-bottom:1px solid var(--border); flex-shrink:0; overflow-x:auto; }
+#mode-bar::-webkit-scrollbar { display:none; }
+.mode-btn { padding:6px 14px; border-radius:20px; font-size:13px; font-weight:500; border:1px solid var(--border); background:transparent; color:var(--text2); cursor:pointer; transition:all var(--trans); white-space:nowrap; font-family:var(--font); flex-shrink:0; }
+.mode-btn.active { background:var(--red); border-color:var(--red); color:#fff; box-shadow:0 0 12px var(--red-glow); }
+.mode-btn:hover:not(.active) { border-color:var(--red); color:var(--red); }
 
-        /* PREMIUM MODAL */
-        .premium-modal { 
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); 
-            display: flex; flex-direction: column; justify-content: center; align-items: center; 
-            z-index: 2000; opacity: 0; visibility: hidden; transition: all 0.3s;
-        }
-        .premium-modal.show { opacity: 1; visibility: visible; }
-        .premium-content { background: linear-gradient(135deg, #ff1744, #ff5722); padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; }
-        .premium-emoji { font-size: 64px; animation: bounce 1s infinite; margin-bottom: 20px; }
-        .upgrade-btn { background: #000; color: #ff1744; border: none; padding: 15px 30px; border-radius: 25px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: all 0.3s; }
+/* MESSAGES */
+#messages { flex:1; overflow-y:auto; padding:20px 16px; display:flex; flex-direction:column; gap:16px; scroll-behavior:smooth; }
+#messages::-webkit-scrollbar { width:4px; }
+#messages::-webkit-scrollbar-track { background:transparent; }
+#messages::-webkit-scrollbar-thumb { background:var(--bg4); border-radius:2px; }
+.msg-row { display:flex; gap:10px; animation:fadeIn .3s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.msg-row.user { flex-direction:row-reverse; }
+.avatar { width:32px; height:32px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; margin-top:2px; }
+.avatar.ai { background:var(--red-dark); color:#fff; border:1px solid var(--red); box-shadow:0 0 8px var(--red-glow); }
+.avatar.user { background:var(--bg4); color:var(--text); }
+.bubble { max-width:75%; padding:12px 16px; border-radius:var(--radius); font-size:15px; line-height:1.65; word-break:break-word; }
+.bubble.ai { background:var(--bubble-ai); border:1px solid var(--border); border-top-left-radius:4px; }
+.bubble.user { background:var(--bubble-user); color:#fff; border-top-right-radius:4px; }
+.bubble pre { background:rgba(0,0,0,0.3); border-radius:8px; padding:12px; overflow-x:auto; margin-top:8px; font-family:var(--mono); font-size:13px; }
+.bubble code { font-family:var(--mono); font-size:13px; background:rgba(229,57,53,0.15); padding:2px 5px; border-radius:4px; }
+.bubble pre code { background:none; padding:0; }
+.typing-bubble { display:flex; align-items:center; gap:5px; padding:14px 18px; }
+.typing-dot { width:7px; height:7px; border-radius:50%; background:var(--red); animation:typingAnim 1.2s infinite; }
+.typing-dot:nth-child(2) { animation-delay:.2s; }
+.typing-dot:nth-child(3) { animation-delay:.4s; }
+@keyframes typingAnim { 0%,60%,100%{transform:translateY(0);opacity:.5} 30%{transform:translateY(-6px);opacity:1} }
 
-        /* ADMIN PANEL */
-        .admin-panel { 
-            position: fixed; right: -400px; top: 80px; width: 400px; height: calc(100vh - 80px); 
-            background: rgba(0,0,0,0.98); backdrop-filter: blur(30px); transition: right 0.3s; z-index: 1001;
-            padding: 20px; overflow-y: auto;
-        }
-        .admin-panel.open { right: 0; }
-        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: rgba(255,23,68,0.2); padding: 15px; border-radius: 12px; text-align: center; }
-        .cmd-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ff1744; background: rgba(255,255,255,0.1); color: #fff; margin-bottom: 10px; }
-        body.light .cmd-input { background: rgba(0,0,0,0.1); color: #212529; }
+/* WELCOME */
+#welcome { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; text-align:center; padding:20px; gap:16px; animation:fadeIn .5s ease; }
+#welcome h1 { font-size:28px; font-weight:700; color:var(--text); }
+#welcome h1 span { color:var(--red); }
+#welcome p { color:var(--text2); font-size:15px; max-width:380px; line-height:1.6; }
+.suggestion-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; max-width:400px; width:100%; margin-top:8px; }
+.suggestion { padding:12px; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; color:var(--text2); cursor:pointer; text-align:left; transition:all var(--trans); line-height:1.4; }
+.suggestion:hover { border-color:var(--red); color:var(--text); background:var(--bg4); }
 
-        /* ANIMATIONS */
-        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes typing { 0%, 60%, 100% { transform: scale(1); } 30% { transform: scale(1.3); } }
-        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,23,68,0.7); } 50% { box-shadow: 0 0 0 10px rgba(255,23,68,0); } }
-        @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-10px); } 60% { transform: translateY(-5px); } }
+/* INPUT */
+#input-area { padding:12px 16px; background:var(--bg2); border-top:1px solid var(--border); flex-shrink:0; }
+#input-wrap { display:flex; align-items:flex-end; gap:8px; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius); padding:8px 12px; transition:border-color var(--trans); }
+#input-wrap:focus-within { border-color:var(--red); box-shadow:0 0 0 3px var(--red-glow); }
+#user-input { flex:1; background:none; border:none; outline:none; color:var(--text); font-size:15px; font-family:var(--font); resize:none; max-height:120px; min-height:24px; line-height:1.5; padding:2px 0; }
+#user-input::placeholder { color:var(--text3); }
+#send-btn { background:var(--red); border:none; color:#fff; width:34px; height:34px; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all var(--trans); font-size:16px; }
+#send-btn:hover { background:var(--red-dark); transform:scale(1.05); }
+#send-btn:active { transform:scale(0.95); }
+#send-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+#input-footer { display:flex; justify-content:space-between; align-items:center; margin-top:6px; }
+#chat-counter { font-size:11px; color:var(--text3); }
+#chat-counter.warn { color:#f59e0b; }
+#chat-counter.danger { color:var(--red); }
+#powered { font-size:11px; color:var(--text3); }
 
-        /* RESPONSIVE */
-        @media (max-width: 768px) { 
-            .chat-container { padding: 80px 15px 80px; }
-            .input-container { left: 15px; right: 15px; bottom: 15px; }
-            .sidebar { width: 100%; left: -100%; }
-            .bubble { max-width: 85%; }
-            .admin-panel { width: 100%; right: -100%; }
-        }
-    </style>
+/* PREMIUM MODAL */
+#premium-modal { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:500; display:none; align-items:center; justify-content:center; padding:20px; animation:fadeIn .3s ease; }
+#premium-modal.show { display:flex; }
+#premium-box { background:var(--bg2); border:1px solid var(--red); border-radius:20px; padding:32px 24px; max-width:380px; width:100%; text-align:center; animation:slideUp .4s cubic-bezier(.4,0,.2,1); box-shadow:0 0 40px var(--red-glow); }
+@keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+#premium-box .p-icon { font-size:48px; margin-bottom:16px; }
+#premium-box h2 { font-size:22px; font-weight:700; color:var(--text); margin-bottom:8px; }
+#premium-box p { color:var(--text2); font-size:14px; margin-bottom:20px; line-height:1.6; }
+.benefit-list { text-align:left; margin-bottom:24px; display:flex; flex-direction:column; gap:8px; }
+.benefit { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--text); }
+.benefit-icon { font-size:16px; width:24px; text-align:center; }
+#upgrade-btn { width:100%; padding:14px; background:linear-gradient(135deg,var(--red),#ff6b35); border:none; color:#fff; font-size:16px; font-weight:700; border-radius:var(--radius); cursor:pointer; font-family:var(--font); transition:all var(--trans); margin-bottom:10px; }
+#upgrade-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px var(--red-glow); }
+#dismiss-btn { background:none; border:none; color:var(--text3); font-size:13px; cursor:pointer; font-family:var(--font); padding:6px; transition:color var(--trans); }
+#dismiss-btn:hover { color:var(--text); }
+
+/* OWNER BADGE */
+#owner-badge { display:none; position:fixed; top:60px; right:12px; background:linear-gradient(135deg,var(--red),#ff6b35); color:#fff; padding:6px 12px; border-radius:20px; font-size:12px; font-weight:700; z-index:300; box-shadow:0 4px 12px var(--red-glow); animation:fadeIn .3s ease; }
+#owner-badge.show { display:block; }
+
+@media (max-width:480px) {
+  .suggestion-grid { grid-template-columns:1fr; }
+  .bubble { max-width:88%; font-size:14px; }
+  #welcome h1 { font-size:22px; }
+  #topbar-logo { font-size:16px; }
+}
+</style>
 </head>
 <body>
-    <!-- HEADER -->
-    <div class="header">
-        <button class="menu-btn" onclick="toggleSidebar()">☰</button>
-        <div class="logo">WormBigs AI</div>
-        <span style="margin-left: 10px; opacity: 0.7;">Tokyo, Japan 🇯🇵 | 9999yo</span>
-        <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+
+<!-- SIDEBAR OVERLAY -->
+<div id="overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div id="sidebar-header">
+    <span id="sidebar-logo">⚡ WormBigs</span>
+    <button id="sidebar-close" onclick="closeSidebar()">✕</button>
+  </div>
+  <div id="sidebar-menu">
+    <button class="menu-item" onclick="newChat()">
+      <span class="icon">✏️</span> New Chat
+    </button>
+    <div class="menu-divider"></div>
+    <div style="font-size:11px;font-weight:600;color:var(--text3);padding:4px 12px 6px;text-transform:uppercase;letter-spacing:1px;">Riwayat Chat</div>
+    <div id="chat-history"></div>
+    <div class="menu-divider"></div>
+  </div>
+  <!-- ADMIN SECTION (hidden, owner only) -->
+  <div id="admin-section">
+    <div class="admin-title"><span class="live-dot"></span>Admin Panel</div>
+    <div class="admin-stat">
+      <span style="font-size:13px;color:var(--text2);">Online Users</span>
+      <span class="stat-val" id="stat-online">1</span>
     </div>
-
-    <!-- SIDEBAR MENU -->
-    <div class="sidebar" id="sidebar">
-        <div class="menu-item" onclick="newChat()">➕ New Chat</div>
-        <div class="menu-item" onclick="loadHistory()">📜 Chat History</div>
-        <div class="menu-item admin-only" id="adminMenu" onclick="toggleAdmin()" style="display: none;">🔧 Admin CMD</div>
-        <div class="menu-item" onclick="clearChat()">🗑️ Clear Chat</div>
+    <div class="admin-stat">
+      <span style="font-size:13px;color:var(--text2);">Total CMD</span>
+      <span class="stat-val" id="stat-cmd">0</span>
     </div>
-
-    <!-- MAIN CHAT -->
-    <div class="chat-container" id="chatContainer">
-        <div class="message ai">
-            <div class="ai-avatar">🐛</div>
-            <div class="bubble">
-                <strong>WormBigs AI</strong> siap melayani! Pilih mode: 
-                <div class="mode-selector">
-                    <button class="mode-btn active" data-mode="normal">Normal</button>
-                    <button class="mode-btn" data-mode="coding">Coding</button>
-                    <button class="mode-btn" data-mode="cerdas">Cerdas</button>
-                </div>
-            </div>
-        </div>
+    <div class="admin-stat">
+      <span style="font-size:13px;color:var(--text2);">Sesi Aktif</span>
+      <span class="stat-val" id="stat-session">1</span>
     </div>
+  </div>
+</div>
 
-    <!-- INPUT -->
-    <div class="input-container">
-        <textarea class="input-field" id="messageInput" placeholder="Ketik pesanmu disini... (Ctrl+K untuk admin)" rows="1"></textarea>
-        <button class="send-btn" onclick="sendMessage()">➤</button>
+<!-- OWNER BADGE -->
+<div id="owner-badge">👑 OWNER MODE</div>
+
+<!-- MAIN -->
+<div id="main">
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <button id="menu-btn" onclick="openSidebar()">
+      <span></span><span></span><span></span>
+    </button>
+    <div id="topbar-center">
+      <span id="topbar-logo">WormBigs</span>
+      <span id="topbar-badge">AI</span>
     </div>
-
-    <!-- TYPING INDICATOR -->
-    <div class="message ai typing" id="typingIndicator" style="display: none;">
-        <div class="ai-avatar">🐛</div>
-        <div>
-            <div>WormBigs sedang mengetik...</div>
-            <div class="typing-dots">
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-            </div>
-        </div>
+    <div id="topbar-right">
+      <button id="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
     </div>
+  </div>
 
-    <!-- PREMIUM MODAL -->
-    <div class="premium-modal" id="premiumModal">
-        <div class="premium-content">
-            <div class="premium-emoji">👑✨🚀</div>
-            <h2>UPGRADE PREMIUM!</h2>
-            <p><strong>UNLIMITED CHAT</strong> • Bebas CMD • Tanpa Batas • Special Access • CMD Rahasia</p>
-            <button class="upgrade-btn" onclick="upgradePremium()">UPGRADE PREMIUM 👑</button>
-        </div>
+  <!-- MODE BAR -->
+  <div id="mode-bar">
+    <button class="mode-btn active" data-mode="normal" onclick="setMode(this)">💬 Normal</button>
+    <button class="mode-btn" data-mode="coding" onclick="setMode(this)">💻 Coding</button>
+    <button class="mode-btn" data-mode="cerdas" onclick="setMode(this)">🧠 Cerdas</button>
+  </div>
+
+  <!-- MESSAGES -->
+  <div id="messages">
+    <div id="welcome">
+      <div style="font-size:48px;margin-bottom:4px;">⚡</div>
+      <h1>Halo! Saya <span>WormBigs</span></h1>
+      <p>AI cerdas dari Tokyo 🇯🇵 — siap membantu kamu coding, belajar, atau sekadar ngobrol!</p>
+      <div class="suggestion-grid">
+        <div class="suggestion" onclick="useSuggestion(this)">💻 Buatin kode HTML landing page keren</div>
+        <div class="suggestion" onclick="useSuggestion(this)">🧮 Jelaskan rumus matematika integral</div>
+        <div class="suggestion" onclick="useSuggestion(this)">✍️ Buat caption Instagram aesthetic</div>
+        <div class="suggestion" onclick="useSuggestion(this)">🤖 Apa itu Artificial Intelligence?</div>
+      </div>
     </div>
+  </div>
 
-    <!-- ADMIN PANEL -->
-    <div class="admin-panel" id="adminPanel">
-        <h3>🔧 Admin CMD - twguhsuperst</h3>
-        <div class="stats">
-            <div class="stat-card">
-                <div style="font-size: 24px; font-weight: bold;">12</div>
-                <div>Online Users</div>
-            </div>
-            <div class="stat-card">
-                <div style="font-size: 24px; font-weight: bold;" id="cmdCount">47</div>
-                <div>Total CMD</div>
-            </div>
-        </div>
-        <input type="text" class="cmd-input" id="adminCmd" placeholder="Masukkan command...">
-        <div id="adminOutput" style="font-size: 12px; opacity: 0.8; margin-top: 10px;"></div>
+  <!-- INPUT AREA -->
+  <div id="input-area">
+    <div id="input-wrap">
+      <textarea id="user-input" rows="1" placeholder="Ketik pesan..." onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button id="send-btn" onclick="sendMessage()">➤</button>
     </div>
+    <div id="input-footer">
+      <span id="chat-counter">10 pesan tersisa hari ini</span>
+      <span id="powered">WormBigs AI © twguhsuperst</span>
+    </div>
+  </div>
+</div>
 
-    <script>
-        // STATE
-        let messages = [];
-        let currentMode = 'normal';
-        let chatCount = 0;
-        let isPremium = false;
-        let isOwner = false;
-        let cmdCount = 47;
-        let onlineUsers = 12;
+<!-- PREMIUM MODAL -->
+<div id="premium-modal">
+  <div id="premium-box">
+    <div class="p-icon">👑✨</div>
+    <h2>Upgrade ke Premium!</h2>
+    <p>Kamu telah mencapai batas 10 pesan gratis hari ini. Upgrade Premium untuk pengalaman tanpa batas!</p>
+    <div class="benefit-list">
+      <div class="benefit"><span class="benefit-icon">♾️</span> Unlimited chat tanpa batas</div>
+      <div class="benefit"><span class="benefit-icon">⚡</span> Bebas semua CMD & fitur</div>
+      <div class="benefit"><span class="benefit-icon">🚀</span> Respon lebih cepat & prioritas</div>
+      <div class="benefit"><span class="benefit-icon">🔓</span> Akses mode spesial eksklusif</div>
+      <div class="benefit"><span class="benefit-icon">🌟</span> Support 24/7 langsung owner</div>
+      <div class="benefit"><span class="benefit-icon">💎</span> Badge Premium di profil kamu</div>
+    </div>
+    <button id="upgrade-btn" onclick="goTelegram()">🚀 Upgrade Premium Sekarang</button>
+    <button id="dismiss-btn" onclick="closePremium()">Nanti saja</button>
+  </div>
+</div>
 
-        // API KEY (ENCODED - SAFE FOR GITHUB)
-        const API_KEY = atob('c2stcHJvai1Bd0dqMnFndHl6TS9feTU3dWJfc0JZWjYtby1sWFZLYmZtRVlBQzkyeVMxS1Z5WW5TNFdqcjBZbERwRXJnRnpanJ3d2IyUDRoYWRSWlQzQmxrRkppeU5pR3VtWGVDM3BENnVHOVZiVGlxcV9RVVdlyWFuZldlVUUxLWk4VWl1Q2VySmx3d2IyUDRQYWtHWEFCUkZwV3lDZWFUUEJjQQ==');
-        
-        // INIT
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('messageInput').focus();
-            updateCmdCount();
-            
-            // Check owner mode
-            setTimeout(() => {
-                if (localStorage.getItem('ownerMode') === 'twguhowner') {
-                    enterOwnerMode();
-                }
-            }, 1000);
-        });
+<script>
+const TELEGRAM = 'https://t.me/kalzxxw';
+const API_KEY = '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';
+const OWNER_CMD = 'twguhowner';
+const DAILY_LIMIT = 10;
 
-        // EVENTS
-        document.getElementById('messageInput').addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'k') {
-                e.preventDefault();
-                if (isOwner) toggleAdmin();
-            }
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
+let isOwner = false;
+let isLight = false;
+let currentMode = 'normal';
+let chatCount = parseInt(localStorage.getItem('wbc_' + today()) || '0');
+let totalCmd = parseInt(localStorage.getItem('wbc_total') || '0');
+let conversations = JSON.parse(localStorage.getItem('wbc_convs') || '[]');
+let currentConv = [];
+let isTyping = false;
 
-              // MODE SELECTOR (lanjutan)
-        document.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentMode = btn.dataset.mode;
-            });
-        });
+function today() { return new Date().toISOString().split('T')[0]; }
+function updateCounter() {
+  const rem = isOwner ? '∞' : Math.max(0, DAILY_LIMIT - chatCount);
+  const el = document.getElementById('chat-counter');
+  el.textContent = isOwner ? 'Unlimited (Owner)' : rem + ' pesan tersisa hari ini';
+  el.className = '';
+  if (!isOwner) {
+    if (chatCount >= 8) el.className = 'danger';
+    else if (chatCount >= 6) el.className = 'warn';
+  }
+}
+function updateAdminStats() {
+  document.getElementById('stat-cmd').textContent = totalCmd;
+  const o = Math.floor(Math.random()*3)+1;
+  document.getElementById('stat-online').textContent = o;
+}
 
-        // THEME TOGGLE
-        function toggleTheme() {
-            document.body.classList.toggle('light');
-            localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
-            document.querySelector('.theme-toggle').textContent = document.body.classList.contains('light') ? '🌙' : '☀️';
-        }
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+  renderHistory();
+  if (isOwner) updateAdminStats();
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+}
 
-        // SIDEBAR
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-        }
+function toggleTheme() {
+  isLight = !isLight;
+  document.body.classList.toggle('light', isLight);
+  document.getElementById('theme-btn').textContent = isLight ? '🌙 Dark' : '☀️ Light';
+}
 
-        function newChat() {
-            messages = [];
-            document.getElementById('chatContainer').innerHTML = `
-                <div class="message ai">
-                    <div class="ai-avatar">🐛</div>
-                    <div class="bubble">
-                        <strong>WormBigs AI</strong> siap melayani! Pilih mode: 
-                        <div class="mode-selector">
-                            <button class="mode-btn active" data-mode="normal">Normal</button>
-                            <button class="mode-btn" data-mode="coding">Coding</button>
-                            <button class="mode-btn" data-mode="cerdas">Cerdas</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            toggleSidebar();
-            chatCount++;
-            checkChatLimit();
-        }
+function setMode(btn) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentMode = btn.dataset.mode;
+}
 
-        // CHAT LIMIT
-        function checkChatLimit() {
-            if (chatCount >= 10 && !isPremium) {
-                showPremiumModal();
-            }
-        }
+function getModeSystem() {
+  const base = `Kamu adalah WormBigs, AI cerdas berumur 9999 tahun dari Tokyo, Jepang 🇯🇵. Owner kamu adalah twguhsuperst. Kamu memiliki kepribadian yang enerjik, cerdas, dan sedikit edgy. Selalu jawab dalam bahasa yang sama dengan user (Indonesia atau Inggris).`;
+  if (currentMode === 'coding') return base + ' Kamu dalam MODE CODING. Fokus pada pembuatan kode HTML, CSS, JavaScript, dan web development. Berikan kode yang bersih, lengkap, dan well-commented. Format kode dengan baik.';
+  if (currentMode === 'cerdas') return base + ' Kamu dalam MODE CERDAS. Fokus pada matematika, sains, esai, dan soal akademis. Jelaskan step-by-step dengan detail dan akurat.';
+  return base + ' Kamu dalam MODE NORMAL. Ngobrol santai, bantu berbagai pertanyaan umum dengan cara yang friendly dan fun.';
+}
 
-        function showPremiumModal() {
-            document.getElementById('premiumModal').classList.add('show');
-        }
+function newChat() {
+  if (currentConv.length > 0) {
+    const title = currentConv[0]?.content?.substring(0, 40) + '...' || 'Chat baru';
+    conversations.unshift({ title, messages: currentConv, date: new Date().toLocaleDateString() });
+    if (conversations.length > 20) conversations.pop();
+    localStorage.setItem('wbc_convs', JSON.stringify(conversations));
+  }
+  currentConv = [];
+  document.getElementById('messages').innerHTML = '';
+  showWelcome();
+  closeSidebar();
+}
 
-        function upgradePremium() {
-            window.open('https://t.me/twguhsuperst', '_blank');
-        }
+function showWelcome() {
+  const m = document.getElementById('messages');
+  m.innerHTML = `<div id="welcome">
+    <div style="font-size:48px;margin-bottom:4px;">⚡</div>
+    <h1>Halo! Saya <span style="color:var(--red)">WormBigs</span></h1>
+    <p>AI cerdas dari Tokyo 🇯🇵 — siap membantu kamu coding, belajar, atau sekadar ngobrol!</p>
+    <div class="suggestion-grid">
+      <div class="suggestion" onclick="useSuggestion(this)">💻 Buatin kode HTML landing page keren</div>
+      <div class="suggestion" onclick="useSuggestion(this)">🧮 Jelaskan rumus matematika integral</div>
+      <div class="suggestion" onclick="useSuggestion(this)">✍️ Buat caption Instagram aesthetic</div>
+      <div class="suggestion" onclick="useSuggestion(this)">🤖 Apa itu Artificial Intelligence?</div>
+    </div>
+  </div>`;
+}
 
-        // SEND MESSAGE
-        async function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const text = input.value.trim();
-            if (!text) return;
+function renderHistory() {
+  const el = document.getElementById('chat-history');
+  el.innerHTML = '';
+  if (conversations.length === 0) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:4px 12px;">Belum ada riwayat</div>';
+    return;
+  }
+  conversations.slice(0,15).forEach((c, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'hist-item';
+    btn.textContent = c.title || 'Chat ' + (i+1);
+    btn.onclick = () => loadConv(i);
+    el.appendChild(btn);
+  });
+}
 
-            // Add user message
-            addMessage(text, 'user');
-            input.value = '';
+function loadConv(i) {
+  const conv = conversations[i];
+  currentConv = conv.messages || [];
+  const m = document.getElementById('messages');
+  m.innerHTML = '';
+  currentConv.forEach(msg => {
+    if (msg.role === 'user') appendMsg('user', msg.content);
+    else appendMsg('ai', msg.content);
+  });
+  closeSidebar();
+}
 
-            // Check limits
-            if (chatCount >= 10 && !isPremium) {
-                addMessage('⏰ Batas harian tercapai! Upgrade premium untuk unlimited chat 👑', 'ai');
-                return;
-            }
+function useSuggestion(el) {
+  document.getElementById('user-input').value = el.textContent.replace(/^[^\s]+\s/, '');
+  sendMessage();
+}
 
-            // Typing indicator
-            showTyping();
+function appendMsg(role, text) {
+  const w = document.getElementById('welcome');
+  if (w) w.remove();
+  const m = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row ' + role;
+  const av = document.createElement('div');
+  av.className = 'avatar ' + role;
+  av.textContent = role === 'ai' ? 'W' : '👤';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ' + role;
+  bubble.innerHTML = formatText(text);
+  if (role === 'ai') { row.appendChild(av); row.appendChild(bubble); }
+  else { row.appendChild(bubble); row.appendChild(av); }
+  m.appendChild(row);
+  m.scrollTop = m.scrollHeight;
+  return bubble;
+}
 
-            try {
-                const response = await getAIResponse(text);
-                hideTyping();
-                addMessage(response, 'ai');
-            } catch (error) {
-                hideTyping();
-                addMessage('❌ Error: WormBigs sedang istirahat. Coba lagi nanti! 😴', 'ai');
-            }
-        }
+function formatText(t) {
+  t = t.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+  t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+  t = t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  t = t.replace(/\n/g, '<br>');
+  return t;
+}
 
-        function addMessage(text, sender) {
-            const container = document.getElementById('chatContainer');
-            const div = document.createElement('div');
-            div.className = `message ${sender}`;
-            div.innerHTML = `
-                <div class="${sender === 'user' ? 'user-avatar' : 'ai-avatar'}">${sender === 'user' ? '👤' : '🐛'}</div>
-                <div class="bubble">${text}</div>
-            `;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-        }
+function showTyping() {
+  const w = document.getElementById('welcome');
+  if (w) w.remove();
+  const m = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row ai'; row.id = 'typing-row';
+  const av = document.createElement('div');
+  av.className = 'avatar ai'; av.textContent = 'W';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ai typing-bubble';
+  bubble.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  row.appendChild(av); row.appendChild(bubble);
+  m.appendChild(row);
+  m.scrollTop = m.scrollHeight;
+}
+function hideTyping() {
+  const t = document.getElementById('typing-row');
+  if (t) t.remove();
+}
 
-        function showTyping() {
-            document.getElementById('typingIndicator').style.display = 'flex';
-            document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
-        }
+function goTelegram() { window.open(TELEGRAM, '_blank'); }
+function closePremium() { document.getElementById('premium-modal').classList.remove('show'); }
+function showPremium() { document.getElementById('premium-modal').classList.add('show'); }
 
-        function hideTyping() {
-            document.getElementById('typingIndicator').style.display = 'none';
-        }
+async function sendMessage() {
+  const inp = document.getElementById('user-input');
+  const text = inp.value.trim();
+  if (!text || isTyping) return;
 
-        // OPENAI API
-        async function getAIResponse(message) {
-            // 2 second typing delay
-            await new Promise(resolve => setTimeout(resolve, 2000));
+  // SECRET OWNER CMD
+  if (text.toLowerCase() === OWNER_CMD) {
+    isOwner = true;
+    inp.value = '';
+    document.getElementById('owner-badge').classList.add('show');
+    document.getElementById('admin-section').classList.add('visible');
+    appendMsg('ai', '👑 **MODE OWNER AKTIF!**\nSelamat datang, twguhsuperst! Semua fitur terbuka, chat unlimited aktif.');
+    updateCounter();
+    return;
+  }
 
-            const systemPrompt = `Kamu WormBigs AI, umur 9999 tahun dari Tokyo Japan. Owner: twguhsuperst. Jawab dalam Bahasa Indonesia yang santai dan smooth. Mode sekarang: ${currentMode}.
+  if (!isOwner && chatCount >= DAILY_LIMIT) { showPremium(); return; }
 
-${currentMode === 'coding' ? 'MODE CODING: Khusus bikin code HTML/CSS/JS/Web lengkap dan clean. Kasih preview code!' : ''}
-${currentMode === 'cerdas' ? 'MODE CERDAS: Jawab pintar untuk math, essay, pilihan ganda, analisis mendalam!' : ''}
-${currentMode === 'normal' ? 'MODE NORMAL: Chat biasa, santai, fun!' : ''}`;
+  inp.value = '';
+  inp.style.height = 'auto';
+  appendMsg('user', text);
+  currentConv.push({ role: 'user', content: text });
 
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        ...messages.slice(-10),
-                        { role: 'user', content: message }
-                    ],
-                    model: 'gpt-4o-mini',
-                    stream: false
-                })
-            });
+  if (!isOwner) chatCount++;
+  totalCmd++;
+  localStorage.setItem('wbc_' + today(), chatCount);
+  localStorage.setItem('wbc_total', totalCmd);
+  updateCounter();
+  if (isOwner) updateAdminStats();
 
-            if (!response.ok) throw new Error('API Error');
-            
-            const data = await response.json();
-            const aiMessage = data.choices[0].message.content;
-            
-            // Update messages history
-            messages.push({ role: 'user', content: message });
-            messages.push({ role: 'assistant', content: aiMessage });
-            
-            return aiMessage;
-        }
+  isTyping = true;
+  document.getElementById('send-btn').disabled = true;
+  showTyping();
 
-        // ADMIN SYSTEM
-        function toggleAdmin() {
-            const panel = document.getElementById('adminPanel');
-            panel.classList.toggle('open');
-            document.getElementById('adminMenu').style.display = isOwner ? 'block' : 'none';
-        }
+  await new Promise(r => setTimeout(r, 2000));
 
-        function enterOwnerMode() {
-            isOwner = true;
-            document.getElementById('adminMenu').style.display = 'block';
-            addMessage('🔓 MODE OWNER AKTIF! Selamat datang twguhsuperst 👑', 'ai');
-        }
+  try {
+    const msgs = currentConv.map(c => ({ role: c.role, content: c.content }));
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY },
+      body: JSON.stringify({ model: 'gpt-3.5-turbo', messages: [{ role: 'system', content: getModeSystem() }, ...msgs], max_tokens: 1500 })
+    });
+    const data = await res.json();
+    hideTyping();
+    const reply = data.choices?.[0]?.message?.content || 'Maaf, ada gangguan. Coba lagi ya! 🙏';
+    appendMsg('ai', reply);
+    currentConv.push({ role: 'assistant', content: reply });
+  } catch(e) {
+    hideTyping();
+    appendMsg('ai', 'Koneksi bermasalah nih. Cek API key & internet kamu ya! 🔧');
+  }
 
-        function updateCmdCount() {
-            cmdCount++;
-            document.getElementById('cmdCount').textContent = cmdCount;
-            onlineUsers = Math.floor(Math.random() * 20) + 10;
-            // Update online users animation
-        }
+  isTyping = false;
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('user-input').focus();
+}
 
-        // FAKE API untuk Vercel (INLINE - NO EXTERNAL)
-        // Karena single HTML, pakai CORS proxy + encoded key
-        window.apiChat = async (body) => {
-            const proxy = 'https://api.allorigins.win/raw?url=';
-            const openaiUrl = 'https://api.openai.com/v1/chat/completions';
-            
-            const response = await fetch(proxy + encodeURIComponent(openaiUrl), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${API_KEY}`
-                },
-                body: JSON.stringify(body)
-            });
-            
-            return response.json();
-        };
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
 
-        // ADMIN CMD HANDLER
-        document.getElementById('adminCmd').addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter') {
-                const cmd = e.target.value;
-                const output = document.getElementById('adminOutput');
-                
-                if (cmd === '/stats') {
-                    output.innerHTML = `Users: ${onlineUsers}<br>CMD: ${cmdCount}<br>Chats: ${chatCount}`;
-                } else if (cmd === '/clear-stats') {
-                    chatCount = 0; cmdCount = 0;
-                    output.textContent = 'Stats reset!';
-                } else if (cmd === '/premium-all') {
-                    isPremium = true;
-                    output.textContent = 'ALL PREMIUM UNLOCKED!';
-                }
-                
-                e.target.value = '';
-                updateCmdCount();
-            }
-        });
-
-        // AUTO SCROLL & RESIZE
-        window.addEventListener('resize', () => {
-            document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
-        });
-
-        // LOAD THEME
-        if (localStorage.getItem('theme') === 'light') {
-            document.body.classList.add('light');
-            document.querySelector('.theme-toggle').textContent = '🌙';
-        }
-    </script>
+// ADMIN live update
+setInterval(() => { if (isOwner) updateAdminStats(); }, 5000);
+updateCounter();
+</script>
 </body>
 </html>
