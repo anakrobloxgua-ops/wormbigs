@@ -286,17 +286,131 @@ html,body { height:100%; overflow:hidden; font-family:var(--font); background:va
 
 <script>
 const TELEGRAM = 'https://t.me/kalzxxw';
-const OWNER_CMD = 'gantengg';
+const OWNER_CMD = 'twguhowner';
 const DAILY_LIMIT = 10;
 
 let isOwner = false;
 let isLight = false;
-let currentMode = 'normal';
+let currentMode = 'auto'; // 🔥 AUTO MODE DEFAULT
 let chatCount = parseInt(localStorage.getItem('wbc_' + today()) || '0');
 let totalCmd = parseInt(localStorage.getItem('wbc_total') || '0');
 let conversations = JSON.parse(localStorage.getItem('wbc_convs') || '[]');
 let currentConv = [];
 let isTyping = false;
+
+function today() { return new Date().toISOString().split('T')[0]; }
+
+/* ===============================
+   🧠 SMART DETECT MODE
+================================ */
+function detectMode(text) {
+  const t = text.toLowerCase();
+
+  if (
+    t.includes('code') || t.includes('html') || t.includes('css') ||
+    t.includes('js') || t.includes('javascript') ||
+    t.includes('bug') || t.includes('error')
+  ) return 'coding';
+
+  if (
+    t.includes('hitung') || t.includes('rumus') ||
+    t.includes('matematika') || t.includes('fisika') ||
+    t.includes('integral') || t.includes('soal')
+  ) return 'cerdas';
+
+  return 'normal';
+}
+
+/* ===============================
+   🧠 SYSTEM PROMPT DINAMIS
+================================ */
+function getModeSystemAuto(userText) {
+  const detected = detectMode(userText);
+
+  const base = `Kamu adalah WormBigs, AI super cerdas dari Tokyo 🇯🇵. Style kamu santai, edgy, tapi tetap pintar. Jawab sesuai bahasa user.`;
+
+  if (detected === 'coding') {
+    return base + ' Fokus ke coding. Berikan kode rapi, clean, dan siap pakai.';
+  }
+
+  if (detected === 'cerdas') {
+    return base + ' Fokus ke penjelasan detail, step-by-step, dan akurat.';
+  }
+
+  return base + ' Jawab santai, ringan, tapi tetap membantu.';
+}
+
+/* ===============================
+   🚀 SEND MESSAGE (UPGRADE)
+================================ */
+async function sendMessage() {
+  const inp = document.getElementById('user-input');
+  const text = inp.value.trim();
+  if (!text || isTyping) return;
+
+  if (text.toLowerCase() === OWNER_CMD) {
+    isOwner = true;
+    inp.value = '';
+    document.getElementById('owner-badge').classList.add('show');
+    document.getElementById('admin-section').classList.add('visible');
+    appendMsg('ai', '👑 OWNER MODE AKTIF!');
+    updateCounter();
+    return;
+  }
+
+  if (!isOwner && chatCount >= DAILY_LIMIT) { showPremium(); return; }
+
+  inp.value = '';
+  appendMsg('user', text);
+  currentConv.push({ role: 'user', content: text });
+
+  if (!isOwner) chatCount++;
+  totalCmd++;
+  localStorage.setItem('wbc_' + today(), chatCount);
+  localStorage.setItem('wbc_total', totalCmd);
+  updateCounter();
+
+  isTyping = true;
+  document.getElementById('send-btn').disabled = true;
+  showTyping();
+
+  try {
+    const msgs = currentConv.map(c => ({ role: c.role, content: c.content }));
+
+    const res = await fetch('http://168.144.40.232:3000/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: getModeSystemAuto(text) }, // 🔥 AUTO
+          ...msgs
+        ]
+      })
+    });
+
+    const data = await res.json();
+    hideTyping();
+
+    if (!data || !data.choices) {
+      appendMsg('ai', '⚠️ AI lagi sibuk, coba lagi bentar.');
+      return;
+    }
+
+    const reply = data.choices[0].message.content;
+    appendMsg('ai', reply);
+    currentConv.push({ role: 'assistant', content: reply });
+
+  } catch (e) {
+    hideTyping();
+
+    // 🔥 SMART FALLBACK
+    appendMsg('ai', '⚡ Koneksi ke AI gagal, tapi gua masih bisa bantu dikit.\n\nCoba ulang atau cek VPS lu bro.');
+  }
+
+  isTyping = false;
+  document.getElementById('send-btn').disabled = false;
+}
+</script>
 
 function today() { return new Date().toISOString().split('T')[0]; }
 function updateCounter() {
@@ -433,46 +547,6 @@ function formatText(t) {
   return t;
 }
 
-const AUTO_REPLY = {
-  // KATA KASAR
-  "anjing": "Santai bro, jangan emosi mulu 😅",
-  "kontol": "Bahas yang lebih berguna dong 😏",
-  "memek": "Woi jaga kata-kata 😐",
-  "asu": "Tenang dulu, tarik napas 😌",
-  "goblok": "Jangan toxic bro, kita santai aja 👍",
-  "tolol": "Santai, kita cari solusi bareng 🧠",
-
-  // SAPAAN
-  "halo": "Halo juga 👋 ada yang bisa dibantu?",
-  "hai": "Hai 😄 lagi ngapain?",
-  "p": "Ya ada apa? 😏",
-
-  // UMUM
-  "apa itu ai": "AI itu Artificial Intelligence, teknologi yang bikin mesin bisa mikir kayak manusia 🤖",
-  "siapa kamu": "Gw WormBigs AI 😎 siap bantu apa aja",
-  "lagi apa": "Lagi nunggu lo nanya 😏",
-
-  // CODING
-  "html": "HTML itu struktur dasar website bro 🌐",
-  "css": "CSS buat styling biar web lo keren 🎨",
-  "javascript": "JS bikin web lo jadi interaktif ⚡",
-
-  // GABUT
-  "gabut": "Gabut? Mau gw kasih ide? 😏",
-  "bosen": "Ya cari kegiatan bro 😴",
-  "ngapain": "Ngoding kek, biar jadi sultan 💻💰",
-
-  // RANDOM
-  "aku sedih": "Yaudah sini cerita 😌",
-  "aku capek": "Istirahat dulu bro, jangan dipaksain 🛌",
-  "aku lapar": "Makan dulu 😤 jangan nyiksa diri",
-
-  // TEKNOLOGI
-  "vps": "VPS itu server virtual, cocok buat bot / web 🔥",
-  "api": "API itu jembatan antar sistem 🔗",
-  "server": "Server itu tempat backend lo jalan ⚙️"
-}
-
 function showTyping() {
   const w = document.getElementById('welcome');
   if (w) w.remove();
@@ -519,14 +593,6 @@ async function sendMessage() {
   inp.style.height = 'auto';
   appendMsg('user', text);
   currentConv.push({ role: 'user', content: text });
-const lower = text.toLowerCase();
-for (let key in AUTO_REPLY) {
-  if (lower.includes(key)) {
-    appendMsg('ai', AUTO_REPLY[key]);
-    currentConv.push({ role: 'assistant', content: AUTO_REPLY[key] });
-    return;
-  }
-}
 
   if (!isOwner) chatCount++;
   totalCmd++;
