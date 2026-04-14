@@ -286,7 +286,7 @@ html,body { height:100%; overflow:hidden; font-family:var(--font); background:va
 
 <script>
 const TELEGRAM = 'https://t.me/kalzxxw';
-const OWNER_CMD = 'twguhowner';
+const OWNER_CMD = 'gantengg';
 const DAILY_LIMIT = 10;
 
 let isOwner = false;
@@ -433,6 +433,46 @@ function formatText(t) {
   return t;
 }
 
+const AUTO_REPLY = {
+  // KATA KASAR
+  "anjing": "Santai bro, jangan emosi mulu 😅",
+  "kontol": "Bahas yang lebih berguna dong 😏",
+  "memek": "Woi jaga kata-kata 😐",
+  "asu": "Tenang dulu, tarik napas 😌",
+  "goblok": "Jangan toxic bro, kita santai aja 👍",
+  "tolol": "Santai, kita cari solusi bareng 🧠",
+
+  // SAPAAN
+  "halo": "Halo juga 👋 ada yang bisa dibantu?",
+  "hai": "Hai 😄 lagi ngapain?",
+  "p": "Ya ada apa? 😏",
+
+  // UMUM
+  "apa itu ai": "AI itu Artificial Intelligence, teknologi yang bikin mesin bisa mikir kayak manusia 🤖",
+  "siapa kamu": "Gw WormBigs AI 😎 siap bantu apa aja",
+  "lagi apa": "Lagi nunggu lo nanya 😏",
+
+  // CODING
+  "html": "HTML itu struktur dasar website bro 🌐",
+  "css": "CSS buat styling biar web lo keren 🎨",
+  "javascript": "JS bikin web lo jadi interaktif ⚡",
+
+  // GABUT
+  "gabut": "Gabut? Mau gw kasih ide? 😏",
+  "bosen": "Ya cari kegiatan bro 😴",
+  "ngapain": "Ngoding kek, biar jadi sultan 💻💰",
+
+  // RANDOM
+  "aku sedih": "Yaudah sini cerita 😌",
+  "aku capek": "Istirahat dulu bro, jangan dipaksain 🛌",
+  "aku lapar": "Makan dulu 😤 jangan nyiksa diri",
+
+  // TEKNOLOGI
+  "vps": "VPS itu server virtual, cocok buat bot / web 🔥",
+  "api": "API itu jembatan antar sistem 🔗",
+  "server": "Server itu tempat backend lo jalan ⚙️"
+}
+
 function showTyping() {
   const w = document.getElementById('welcome');
   if (w) w.remove();
@@ -479,6 +519,14 @@ async function sendMessage() {
   inp.style.height = 'auto';
   appendMsg('user', text);
   currentConv.push({ role: 'user', content: text });
+const lower = text.toLowerCase();
+for (let key in AUTO_REPLY) {
+  if (lower.includes(key)) {
+    appendMsg('ai', AUTO_REPLY[key]);
+    currentConv.push({ role: 'assistant', content: AUTO_REPLY[key] });
+    return;
+  }
+}
 
   if (!isOwner) chatCount++;
   totalCmd++;
