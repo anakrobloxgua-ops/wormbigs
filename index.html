@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="vAI - Asisten AI Indonesia oleh Twguhvándéz. Bisa buat kode HTML CSS JS, coding helper, prompt engineering, machine learning, fullstack, debugging, web development, React, Tailwind, Python, API, generative AI, LLM, dan semua hal tech.">
-    <title>vAI - Asisten AI Twguhvándéz</title>
+    <meta name="description" content="vAI - Asisten AI Indonesia. Generate kode HTML CSS JS, coding helper, prompt engineering, machine learning, web development, dan semua hal tech.">
+    <title>vAI - Asisten AI Serba Bisa</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
         
         :root {
             --bg: #0a0a0f;
-            --surface: #1a1a2e;
+            --surface: #11111f;
             --accent: #00ffea;
             --text: #e0e0ff;
-            --text-secondary: #b0b0ff;
         }
         
         [data-theme="light"] {
@@ -21,102 +20,87 @@
             --surface: #ffffff;
             --accent: #0066cc;
             --text: #1a1a2e;
-            --text-secondary: #444466;
         }
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
+        html, body {
+            height: 100dvh;
+            overflow: hidden;
             font-family: 'Inter', sans-serif;
             background: var(--bg);
             color: var(--text);
-            transition: background 0.4s ease, color 0.4s ease;
         }
-        .hero {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #0f0a1f, #1a0033);
+        
+        .app { height: 100dvh; display: flex; flex-direction: column; }
+        
+        .header {
+            padding: 16px 20px;
+            background: linear-gradient(to right, #1a0033, #2a0055);
             display: flex;
             align-items: center;
-            justify-content: center;
-            text-align: center;
-            position: relative;
+            justify-content: space-between;
+            color: white;
+            z-index: 10;
         }
-        [data-theme="light"] .hero { background: linear-gradient(135deg, #e0f0ff, #c0d8ff); }
         
         .logo {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 5.8rem;
+            font-size: 2.3rem;
             font-weight: 700;
             background: linear-gradient(90deg, var(--accent), #a855f7);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        h1 { font-size: 2.9rem; margin: 20px 0 15px; }
-        .tagline { font-size: 1.35rem; max-width: 820px; margin: 0 auto; color: var(--text-secondary); }
         
-        .controls {
-            position: absolute;
-            top: 30px;
-            right: 30px;
-            display: flex;
-            gap: 12px;
-            z-index: 100;
-        }
-        .theme-toggle, .clear-btn {
-            padding: 12px 18px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid var(--accent);
-            color: var(--text);
-            border-radius: 50px;
+        .header-buttons button {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            font-size: 1.3rem;
             cursor: pointer;
-            font-size: 1.1rem;
-            transition: 0.3s;
+            margin-left: 8px;
         }
-        .theme-toggle:hover, .clear-btn:hover { background: var(--accent); color: #000; }
         
         .chat-container {
-            max-width: 860px;
-            margin: 40px auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
             background: var(--surface);
-            border-radius: 28px;
             overflow: hidden;
-            border: 2px solid var(--accent);
-            box-shadow: 0 0 60px rgba(0, 255, 234, 0.25);
         }
-        .chat-header {
-            background: linear-gradient(to right, #1a0033, #2a0055);
-            padding: 18px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 1.25rem;
-            color: white;
-        }
+        
         .chat-box {
-            height: 480px;
-            padding: 25px;
+            flex: 1;
+            padding: 20px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 16px;
             background: var(--bg);
         }
+        
         .message {
-            max-width: 88%;
-            padding: 15px 22px;
-            border-radius: 22px;
+            max-width: 90%;
+            padding: 15px 20px;
+            border-radius: 20px;
             line-height: 1.55;
-            animation: fadeIn 0.4s ease;
+            animation: fadeIn 0.3s ease;
         }
+        
         .user { 
             align-self: flex-end; 
             background: var(--accent); 
             color: #000; 
-            border-bottom-right-radius: 6px;
         }
+        
         .ai { 
             align-self: flex-start; 
             background: #3a1f6b; 
-            border-bottom-left-radius: 6px;
         }
+        
         pre {
             background: #0a0a1f;
             padding: 16px;
@@ -125,34 +109,64 @@
             margin: 12px 0;
             font-size: 0.95rem;
         }
+        
         .copy-btn {
             margin-top: 8px;
-            padding: 6px 14px;
+            padding: 8px 16px;
             background: #00ffea;
             color: #000;
             border: none;
             border-radius: 20px;
             cursor: pointer;
-            font-size: 0.9rem;
+        }
+        
+        /* Loading Animation */
+        .typing-indicator {
+            align-self: flex-start;
+            background: #3a1f6b;
+            padding: 12px 20px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #aaa;
+            border-radius: 50%;
+            animation: typingBounce 1.2s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-6px); }
         }
         
         .input-area {
-            padding: 22px;
+            padding: 16px 20px;
             background: var(--surface);
+            border-top: 1px solid rgba(255,255,255,0.1);
             display: flex;
             gap: 12px;
         }
+        
         input {
             flex: 1;
-            padding: 16px 24px;
+            padding: 16px 22px;
             border: none;
             border-radius: 50px;
             background: #2a2a4a;
             color: var(--text);
             font-size: 1.05rem;
         }
-        button {
-            padding: 16px 34px;
+        
+        button.send-btn {
+            padding: 16px 28px;
             background: linear-gradient(var(--accent), #00ccbb);
             color: #000;
             border: none;
@@ -160,53 +174,54 @@
             font-weight: 700;
             cursor: pointer;
         }
+        
         .quick-prompts {
-            padding: 15px 0;
-            text-align: center;
+            padding: 12px 20px;
             background: var(--surface);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            border-top: 1px solid rgba(255,255,255,0.1);
         }
+        
         .quick-btn {
             background: rgba(255,255,255,0.08);
             border: 1px solid var(--accent);
             color: var(--text);
-            padding: 9px 16px;
-            margin: 6px;
+            padding: 10px 16px;
             border-radius: 30px;
+            font-size: 0.92rem;
             cursor: pointer;
-            font-size: 0.95rem;
         }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
     </style>
 </head>
 <body data-theme="dark">
-    <section class="hero">
-        <div class="controls">
-            <button class="theme-toggle" id="themeToggle">☀️</button>
-            <button class="clear-btn" id="clearHistory">🗑️ Clear History</button>
-        </div>
-        <div>
+    <div class="app">
+        <div class="header">
             <div class="logo">vAI</div>
-            <h1>Hai Twguhvándéz! 👋</h1>
-            <p class="tagline">
-                Aku vAI, asisten AI pribadimu.<br>
-                Bisa buat kode HTML CSS JS, jelasin coding, prompt engineering, machine learning, web development, dan apapun!
-            </p>
-        </div>
-    </section>
-
-    <div class="chat-container">
-        <div class="chat-header">💬 Chat dengan vAI — Kode Generator Aktif</div>
-        <div class="chat-box" id="chatBox"></div>
-        
-        <div class="quick-prompts">
-            <button class="quick-btn" onclick="quickPrompt('Buatkan landing page portfolio untuk Twguhvándéz')">Portfolio</button>
-            <button class="quick-btn" onclick="quickPrompt('Buatkan todo list dengan HTML CSS JS')">Todo List</button>
-            <button class="quick-btn" onclick="quickPrompt('Buatkan form login modern')">Form Login</button>
-            <button class="quick-btn" onclick="quickPrompt('Jelasin CSS Grid dengan contoh kode lengkap')">CSS Grid</button>
+            <div class="header-buttons">
+                <button id="newChat">New Chat</button>
+                <button id="themeToggle">☀️</button>
+                <button id="clearHistory">🗑️</button>
+            </div>
         </div>
         
-        <div class="input-area">
-            <input type="text" id="userInput" placeholder="Ketik perintahmu... (contoh: buatkan website ecommerce sederhana)">
-            <button onclick="sendMessage()">Kirim</button>
+        <div class="chat-container">
+            <div class="chat-box" id="chatBox"></div>
+            
+            <div class="quick-prompts">
+                <button class="quick-btn" onclick="quickPrompt('Buatkan landing page portfolio modern')">Portfolio</button>
+                <button class="quick-btn" onclick="quickPrompt('Buatkan todo list lengkap dengan HTML CSS JS')">Todo List</button>
+                <button class="quick-btn" onclick="quickPrompt('Buatkan form login dengan animasi')">Form Login</button>
+                <button class="quick-btn" onclick="quickPrompt('Buatkan kalkulator sederhana')">Kalkulator</button>
+            </div>
+            
+            <div class="input-area">
+                <input type="text" id="userInput" placeholder="Ketik apa saja... (contoh: buatkan website toko online)">
+                <button class="send-btn" onclick="sendMessage()">Kirim</button>
+            </div>
         </div>
     </div>
 
@@ -216,9 +231,7 @@
         
         function loadHistory() {
             chatBox.innerHTML = '';
-            history.forEach(msg => {
-                addMessage(msg.text, msg.type, false);
-            });
+            history.forEach(msg => addMessage(msg.text, msg.type, false));
         }
         
         function saveHistory() {
@@ -234,29 +247,51 @@
             
             if (save) {
                 history.push({text, type});
-                if (history.length > 50) history.shift();
+                if (history.length > 80) history.shift();
                 saveHistory();
             }
         }
         
+        function showTypingIndicator() {
+            const typing = document.createElement('div');
+            typing.className = 'typing-indicator';
+            typing.id = 'typingIndicator';
+            typing.innerHTML = `
+                <span>vAI sedang mengetik</span>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            `;
+            chatBox.appendChild(typing);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return typing;
+        }
+        
         function simulateAIResponse(userText) {
-            const lower = userText.toLowerCase();
+            const typing = showTypingIndicator();
             
-            if (lower.includes("buatkan") || lower.includes("buat") || lower.includes("kode") || lower.includes("code") || lower.includes("html") || lower.includes("css") || lower.includes("js")) {
-                // Kode generator mode
-                let codeExample = `<pre><code>/* vAI generated code for: ${userText} */\n\n&lt;!DOCTYPE html&gt;\n&lt;html&gt;\n&lt;head&gt;\n  &lt;title&gt;Contoh dari vAI&lt;/title&gt;\n  &lt;style&gt;\n    body { background: linear-gradient(#0a0a0f, #1a0033); color: white; }\n  &lt;/style&gt;\n&lt;/head&gt;\n&lt;body&gt;\n  &lt;h1&gt;Halo Twguhvándéz! 👋&lt;/h1&gt;\n&lt;/body&gt;\n&lt;/html&gt;</code></pre>`;
-                codeExample += `<button class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)">📋 Copy Code</button>`;
+            setTimeout(() => {
+                chatBox.removeChild(typing);
                 
-                addMessage(`Berikut kode yang aku buatkan sesuai permintaanmu:<br><br>${codeExample}<br><br>Kamu bisa copy langsung dan paste ke file .html baru. Mau aku modifikasi lagi?`, 'ai');
-            } else {
-                const responses = [
-                    `Mantap Twguhvándéz! 🔥 Aku paham. Mau aku buatkan kode HTML CSS JS untuk itu?`,
-                    `Keren pertanyaannya! Aku vAI siap generate kode lengkap untukmu.`,
-                    `Sip! Ini vAI coding mode. Kasih detail lebih lanjut biar hasilnya pas banget.`,
-                    `Oke, aku bisa buatkan kode sesuai keinginanmu. Mau versi dark mode, animasi, atau responsive?`
-                ];
-                addMessage(responses[Math.floor(Math.random() * responses.length)], 'ai');
-            }
+                const lower = userText.toLowerCase();
+                
+                if (lower.includes("buatkan") || lower.includes("buat") || lower.includes("kode") || lower.includes("code") || 
+                    lower.includes("html") || lower.includes("css") || lower.includes("js") || lower.includes("website")) {
+                    
+                    // Kode generator yang lebih baik
+                    const codeExample = `<pre><code>/* vAI Generated - ${userText} */\n\n&lt;!DOCTYPE html&gt;\n&lt;html lang="id"&gt;\n&lt;head&gt;\n  &lt;meta charset="UTF-8"&gt;\n  &lt;title&gt;Contoh dari vAI&lt;/title&gt;\n  &lt;style&gt;\n    body { font-family: Arial; background: linear-gradient(#0a0a0f, #1a0033); color: white; padding: 40px; }\n  &lt;/style&gt;\n&lt;/head&gt;\n&lt;body&gt;\n  &lt;h1&gt;Halo dari vAI! 👋&lt;/h1&gt;\n  &lt;script&gt;\n    console.log("Kode JS juga jalan!");\n  &lt;/script&gt;\n&lt;/body&gt;\n&lt;/html&gt;</code></pre>`;
+                    
+                    addMessage(`✅ Berikut kode lengkap HTML + CSS + JS yang aku buatkan sesuai permintaanmu:<br><br>${codeExample}<br><button class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)">📋 Copy Semua Kode</button><br><br>Mau aku tambah fitur, ubah warna, atau buat yang lebih advance?`, 'ai');
+                } else {
+                    const responses = [
+                        "Mantap! 👋 Mau aku generate kode HTML, CSS, JS untuk apa?",
+                        "Keren pertanyaannya! Aku siap bantu buat kode lengkap.",
+                        "Oke, vAI coding mode aktif. Kasih detail lebih lanjut biar hasilnya pas.",
+                        "Sip! Apa yang ingin kamu buat hari ini?"
+                    ];
+                    addMessage(responses[Math.floor(Math.random() * responses.length)], 'ai');
+                }
+            }, 1200 + Math.random() * 800); // Random delay biar lebih natural
         }
         
         function sendMessage() {
@@ -267,18 +302,21 @@
             addMessage(text, 'user');
             input.value = '';
             
-            // Simulate thinking
-            setTimeout(() => {
-                simulateAIResponse(text);
-            }, 700);
+            simulateAIResponse(text);
         }
         
         function quickPrompt(text) {
             addMessage(text, 'user');
-            setTimeout(() => {
-                simulateAIResponse(text);
-            }, 600);
+            simulateAIResponse(text);
         }
+        
+        // New Chat
+        document.getElementById('newChat').addEventListener('click', () => {
+            if (confirm('Mulai chat baru? (Riwayat lama tetap tersimpan)')) {
+                chatBox.innerHTML = '';
+                addMessage(`Halo! 👋 Selamat datang kembali di <strong>vAI</strong>.<br><br>Aku bisa generate kode HTML, CSS, JavaScript lengkap untuk apa saja: landing page, aplikasi, form, game, dll.<br><br>Mau buat apa sekarang?`, 'ai', false);
+            }
+        });
         
         // Theme Toggle
         const themeToggle = document.getElementById('themeToggle');
@@ -293,29 +331,28 @@
             setTheme(current === 'dark' ? 'light' : 'dark');
         });
         
-        // Load saved theme
-        const savedTheme = localStorage.getItem('vAITheme') || 'dark';
-        setTheme(savedTheme);
-        
         // Clear History
         document.getElementById('clearHistory').addEventListener('click', () => {
             if (confirm('Hapus semua riwayat chat?')) {
                 history = [];
                 localStorage.removeItem('vAIHistory');
                 chatBox.innerHTML = '';
-                addMessage('Riwayat chat sudah dihapus. Halo lagi Twguhvándéz! 👋 Mau buat kode apa hari ini?', 'ai', false);
+                addMessage('Riwayat dihapus.<br><br>Halo! 👋 Selamat datang di <strong>vAI</strong>. Mau generate kode apa hari ini?', 'ai', false);
             }
         });
         
-        // Enter key support
+        // Enter key
         document.getElementById('userInput').addEventListener('keypress', e => {
             if (e.key === 'Enter') sendMessage();
         });
         
-        // Initial welcome
+        // Load awal
         window.onload = () => {
+            const savedTheme = localStorage.getItem('vAITheme') || 'dark';
+            setTheme(savedTheme);
+            
             if (history.length === 0) {
-                addMessage(`Halo Twguhvándéz! 👋<br><br>Aku <strong>vAI</strong> siap bantu kamu. Mau buat kode HTML, CSS, JS, landing page, aplikasi mini, atau jelasin konsep programming? Ketik saja perintahnya!`, 'ai', false);
+                addMessage(`Halo! 👋 Selamat datang di <strong>vAI</strong>.<br><br>Aku asisten AI yang bisa langsung <strong>generate kode HTML + CSS + JS</strong> lengkap sesuai perintahmu.<br><br>Coba ketik: "buatkan landing page portfolio" atau pilih quick prompt di bawah.`, 'ai', false);
             } else {
                 loadHistory();
             }
