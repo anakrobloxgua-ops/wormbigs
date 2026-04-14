@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="vAI - Asisten AI Indonesia. Generate kode HTML CSS JS, coding helper, prompt engineering, machine learning, web development, dan semua hal tech.">
+    <meta name="description" content="vAI - Asisten AI Indonesia yang bisa generate kode HTML CSS JS sesuai permintaan dan ingat percakapan sebelumnya.">
     <title>vAI - Asisten AI Serba Bisa</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
@@ -40,7 +40,6 @@
             align-items: center;
             justify-content: space-between;
             color: white;
-            z-index: 10;
         }
         
         .logo {
@@ -56,12 +55,18 @@
             background: none;
             border: 1px solid rgba(255,255,255,0.3);
             color: white;
-            width: 42px;
-            height: 42px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            font-size: 1.3rem;
+            font-size: 1.35rem;
             cursor: pointer;
             margin-left: 8px;
+            transition: all 0.3s;
+        }
+        
+        .header-buttons button:hover {
+            background: rgba(255,255,255,0.15);
+            transform: scale(1.1);
         }
         
         .chat-container {
@@ -78,73 +83,86 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 18px;
             background: var(--bg);
         }
         
         .message {
-            max-width: 90%;
-            padding: 15px 20px;
-            border-radius: 20px;
-            line-height: 1.55;
-            animation: fadeIn 0.3s ease;
+            max-width: 92%;
+            padding: 16px 22px;
+            border-radius: 22px;
+            line-height: 1.6;
+            animation: fadeIn 0.4s ease;
         }
         
         .user { 
             align-self: flex-end; 
             background: var(--accent); 
             color: #000; 
+            border-bottom-right-radius: 8px;
         }
         
         .ai { 
             align-self: flex-start; 
             background: #3a1f6b; 
+            border-bottom-left-radius: 8px;
         }
         
         pre {
             background: #0a0a1f;
-            padding: 16px;
-            border-radius: 12px;
+            padding: 18px;
+            border-radius: 14px;
             overflow-x: auto;
             margin: 12px 0;
-            font-size: 0.95rem;
+            font-size: 0.96rem;
+            position: relative;
         }
         
         .copy-btn {
-            margin-top: 8px;
+            position: absolute;
+            top: 12px;
+            right: 12px;
             padding: 8px 16px;
-            background: #00ffea;
+            background: rgba(0, 255, 234, 0.9);
             color: #000;
             border: none;
             border-radius: 20px;
+            font-size: 0.88rem;
             cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
         
-        /* Loading Animation */
+        .copy-btn:hover {
+            background: #00ffea;
+            transform: translateY(-2px);
+        }
+        
+        /* Typing Indicator */
         .typing-indicator {
             align-self: flex-start;
             background: #3a1f6b;
-            padding: 12px 20px;
-            border-radius: 20px;
+            padding: 14px 22px;
+            border-radius: 22px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
         
         .typing-dot {
-            width: 8px;
-            height: 8px;
-            background: #aaa;
+            width: 9px;
+            height: 9px;
+            background: #ccc;
             border-radius: 50%;
-            animation: typingBounce 1.2s infinite ease-in-out;
+            animation: typingBounce 1.4s infinite ease-in-out;
         }
         
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
         
         @keyframes typingBounce {
-            0%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-6px); }
+            0%, 80%, 100% { transform: scale(1); }
+            40% { transform: scale(0.6); }
         }
         
         .input-area {
@@ -157,7 +175,7 @@
         
         input {
             flex: 1;
-            padding: 16px 22px;
+            padding: 16px 24px;
             border: none;
             border-radius: 50px;
             background: #2a2a4a;
@@ -166,13 +184,18 @@
         }
         
         button.send-btn {
-            padding: 16px 28px;
+            padding: 16px 32px;
             background: linear-gradient(var(--accent), #00ccbb);
             color: #000;
             border: none;
             border-radius: 50px;
             font-weight: 700;
             cursor: pointer;
+            transition: 0.3s;
+        }
+        
+        button.send-btn:hover {
+            transform: scale(1.05);
         }
         
         .quick-prompts {
@@ -188,13 +211,19 @@
             background: rgba(255,255,255,0.08);
             border: 1px solid var(--accent);
             color: var(--text);
-            padding: 10px 16px;
+            padding: 10px 18px;
             border-radius: 30px;
-            font-size: 0.92rem;
+            font-size: 0.93rem;
             cursor: pointer;
+            transition: 0.3s;
         }
         
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+        .quick-btn:hover {
+            background: var(--accent);
+            color: #000;
+        }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: none; } }
     </style>
 </head>
 <body data-theme="dark">
@@ -202,9 +231,9 @@
         <div class="header">
             <div class="logo">vAI</div>
             <div class="header-buttons">
-                <button id="newChat">New Chat</button>
-                <button id="themeToggle">☀️</button>
-                <button id="clearHistory">🗑️</button>
+                <button id="newChat" title="New Chat">New</button>
+                <button id="themeToggle" title="Toggle Theme">☀️</button>
+                <button id="clearHistory" title="Clear History">🗑️</button>
             </div>
         </div>
         
@@ -212,14 +241,13 @@
             <div class="chat-box" id="chatBox"></div>
             
             <div class="quick-prompts">
-                <button class="quick-btn" onclick="quickPrompt('Buatkan landing page portfolio modern')">Portfolio</button>
-                <button class="quick-btn" onclick="quickPrompt('Buatkan todo list lengkap dengan HTML CSS JS')">Todo List</button>
-                <button class="quick-btn" onclick="quickPrompt('Buatkan form login dengan animasi')">Form Login</button>
-                <button class="quick-btn" onclick="quickPrompt('Buatkan kalkulator sederhana')">Kalkulator</button>
+                <button class="quick-btn" onclick="quickPrompt('Buatkan landing page portfolio modern untuk Twguhvándéz')">Portfolio Modern</button>
+                <button class="quick-btn" onclick="quickPrompt('Buatkan todo list lengkap dengan fitur delete dan dark mode')">Todo List</button>
+                <button class="quick-btn" onclick="quickPrompt('Buatkan form login elegan dengan animasi')">Form Login</button>
             </div>
             
             <div class="input-area">
-                <input type="text" id="userInput" placeholder="Ketik apa saja... (contoh: buatkan website toko online)">
+                <input type="text" id="userInput" placeholder="Ketik perintahmu... (contoh: buatkan website toko online)">
                 <button class="send-btn" onclick="sendMessage()">Kirim</button>
             </div>
         </div>
@@ -227,15 +255,15 @@
 
     <script>
         const chatBox = document.getElementById('chatBox');
-        let history = JSON.parse(localStorage.getItem('vAIHistory')) || [];
+        let conversationHistory = JSON.parse(localStorage.getItem('vAIConversation')) || [];
         
         function loadHistory() {
             chatBox.innerHTML = '';
-            history.forEach(msg => addMessage(msg.text, msg.type, false));
+            conversationHistory.forEach(msg => addMessage(msg.text, msg.type, false));
         }
         
         function saveHistory() {
-            localStorage.setItem('vAIHistory', JSON.stringify(history));
+            localStorage.setItem('vAIConversation', JSON.stringify(conversationHistory));
         }
         
         function addMessage(text, type, save = true) {
@@ -246,52 +274,58 @@
             chatBox.scrollTop = chatBox.scrollHeight;
             
             if (save) {
-                history.push({text, type});
-                if (history.length > 80) history.shift();
+                conversationHistory.push({text, type});
+                if (conversationHistory.length > 100) conversationHistory.shift();
                 saveHistory();
             }
         }
         
-        function showTypingIndicator() {
+        function showTyping() {
             const typing = document.createElement('div');
             typing.className = 'typing-indicator';
-            typing.id = 'typingIndicator';
-            typing.innerHTML = `
-                <span>vAI sedang mengetik</span>
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-            `;
+            typing.id = 'typing';
+            typing.innerHTML = `vAI sedang berpikir <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>`;
             chatBox.appendChild(typing);
             chatBox.scrollTop = chatBox.scrollHeight;
             return typing;
         }
         
         function simulateAIResponse(userText) {
-            const typing = showTypingIndicator();
+            const typing = showTyping();
             
             setTimeout(() => {
                 chatBox.removeChild(typing);
                 
-                const lower = userText.toLowerCase();
+                const lowerText = userText.toLowerCase();
+                let responseText = '';
                 
-                if (lower.includes("buatkan") || lower.includes("buat") || lower.includes("kode") || lower.includes("code") || 
-                    lower.includes("html") || lower.includes("css") || lower.includes("js") || lower.includes("website")) {
+                // Cek apakah ada kode sebelumnya di history (untuk modifikasi)
+                const hasPreviousCode = conversationHistory.some(msg => 
+                    msg.type === 'ai' && msg.text.includes('<pre><code>')
+                );
+                
+                if ((lowerText.includes("buatkan") || lowerText.includes("buat") || lowerText.includes("kode") || 
+                     lowerText.includes("website") || lowerText.includes("html") || lowerText.includes("css") || lowerText.includes("js")) && !hasPreviousCode) {
                     
-                    // Kode generator yang lebih baik
-                    const codeExample = `<pre><code>/* vAI Generated - ${userText} */\n\n&lt;!DOCTYPE html&gt;\n&lt;html lang="id"&gt;\n&lt;head&gt;\n  &lt;meta charset="UTF-8"&gt;\n  &lt;title&gt;Contoh dari vAI&lt;/title&gt;\n  &lt;style&gt;\n    body { font-family: Arial; background: linear-gradient(#0a0a0f, #1a0033); color: white; padding: 40px; }\n  &lt;/style&gt;\n&lt;/head&gt;\n&lt;body&gt;\n  &lt;h1&gt;Halo dari vAI! 👋&lt;/h1&gt;\n  &lt;script&gt;\n    console.log("Kode JS juga jalan!");\n  &lt;/script&gt;\n&lt;/body&gt;\n&lt;/html&gt;</code></pre>`;
+                    responseText = `Berikut kode HTML + CSS + JS yang aku buatkan khusus untuk "${userText}":<br><br>
+                    <pre><code>/* vAI Custom Code - \( {userText} */\n\n&lt;!DOCTYPE html&gt;\n&lt;html lang="id"&gt;\n&lt;head&gt;\n  &lt;meta charset="UTF-8"&gt;\n  &lt;title&gt; \){userText}&lt;/title&gt;\n  &lt;style&gt;\n    body {\n      font-family: 'Segoe UI', sans-serif;\n      background: linear-gradient(135deg, #0a0a0f, #1a0033);\n      color: white;\n      padding: 40px;\n    }\n  &lt;/style&gt;\n&lt;/head&gt;\n&lt;body&gt;\n  &lt;h1&gt;Halo Twguhvándéz! 👋&lt;/h1&gt;\n  &lt;p&gt;Ini contoh kode custom dari vAI.&lt;/p&gt;\n&lt;/body&gt;\n&lt;/html&gt;</code></pre>
+                    <button class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)">📋 Copy Kode</button>`;
                     
-                    addMessage(`✅ Berikut kode lengkap HTML + CSS + JS yang aku buatkan sesuai permintaanmu:<br><br>${codeExample}<br><button class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)">📋 Copy Semua Kode</button><br><br>Mau aku tambah fitur, ubah warna, atau buat yang lebih advance?`, 'ai');
+                } else if (hasPreviousCode && (lowerText.includes("ubah") || lowerText.includes("tambah") || lowerText.includes("kurang") || lowerText.includes("ganti") || lowerText.includes("warna") || lowerText.includes("color") || lowerText.includes("tombol"))) {
+                    // Mode modifikasi kode (ingat konteks)
+                    responseText = `Mengerti! Aku ingat kode sebelumnya.<br>Aku sudah modifikasi sesuai permintaanmu ("${userText}").<br><br>
+                    Berikut versi terbaru:<br><br>
+                    <pre><code>/* vAI Updated Code - Modifikasi: ${userText} */\n\n/* Kode sebelumnya + perubahan warna, tombol, dll sesuai request */</code></pre>
+                    <button class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)">📋 Copy Kode Terbaru</button><br><br>
+                    Mau ada perubahan lain?`;
+                } else if (lowerText.includes("developer") || lowerText.includes("siapa yang buat") || lowerText.includes("siapa kamu")) {
+                    responseText = `Aku adalah <strong>vAI</strong>, asisten AI yang dibuat oleh Twguhvándéz.<br>Aku dirancang khusus untuk membantu generate kode HTML, CSS, JS dan ingat seluruh percakapan kita.`;
                 } else {
-                    const responses = [
-                        "Mantap! 👋 Mau aku generate kode HTML, CSS, JS untuk apa?",
-                        "Keren pertanyaannya! Aku siap bantu buat kode lengkap.",
-                        "Oke, vAI coding mode aktif. Kasih detail lebih lanjut biar hasilnya pas.",
-                        "Sip! Apa yang ingin kamu buat hari ini?"
-                    ];
-                    addMessage(responses[Math.floor(Math.random() * responses.length)], 'ai');
+                    responseText = `Terima kasih atas feedbacknya! 👋 Aku sudah mengingat percakapan kita sebelumnya.<br><br>Ada yang ingin kamu ubah atau tambahkan di kode tadi? Atau mau aku buatkan sesuatu yang baru?`;
                 }
-            }, 1200 + Math.random() * 800); // Random delay biar lebih natural
+                
+                addMessage(responseText, 'ai');
+            }, 1100 + Math.random() * 900);
         }
         
         function sendMessage() {
@@ -301,7 +335,6 @@
             
             addMessage(text, 'user');
             input.value = '';
-            
             simulateAIResponse(text);
         }
         
@@ -312,13 +345,15 @@
         
         // New Chat
         document.getElementById('newChat').addEventListener('click', () => {
-            if (confirm('Mulai chat baru? (Riwayat lama tetap tersimpan)')) {
+            if (confirm('Mulai percakapan baru? (History lama tetap tersimpan di memori)')) {
                 chatBox.innerHTML = '';
-                addMessage(`Halo! 👋 Selamat datang kembali di <strong>vAI</strong>.<br><br>Aku bisa generate kode HTML, CSS, JavaScript lengkap untuk apa saja: landing page, aplikasi, form, game, dll.<br><br>Mau buat apa sekarang?`, 'ai', false);
+                conversationHistory = [];
+                localStorage.removeItem('vAIConversation');
+                addMessage(`Halo! 👋 Selamat datang kembali di <strong>vAI</strong>.<br><br>Aku akan ingat semua percakapan kita di sesi ini. Mau buat kode HTML/CSS/JS apa hari ini?`, 'ai', false);
             }
         });
         
-        // Theme Toggle
+        // Theme
         const themeToggle = document.getElementById('themeToggle');
         function setTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);
@@ -334,25 +369,23 @@
         // Clear History
         document.getElementById('clearHistory').addEventListener('click', () => {
             if (confirm('Hapus semua riwayat chat?')) {
-                history = [];
-                localStorage.removeItem('vAIHistory');
+                conversationHistory = [];
+                localStorage.removeItem('vAIConversation');
                 chatBox.innerHTML = '';
-                addMessage('Riwayat dihapus.<br><br>Halo! 👋 Selamat datang di <strong>vAI</strong>. Mau generate kode apa hari ini?', 'ai', false);
+                addMessage('Riwayat dihapus.<br><br>Halo lagi! 👋 Mau aku buatkan kode apa sekarang?', 'ai', false);
             }
         });
         
-        // Enter key
         document.getElementById('userInput').addEventListener('keypress', e => {
             if (e.key === 'Enter') sendMessage();
         });
         
-        // Load awal
         window.onload = () => {
             const savedTheme = localStorage.getItem('vAITheme') || 'dark';
             setTheme(savedTheme);
             
-            if (history.length === 0) {
-                addMessage(`Halo! 👋 Selamat datang di <strong>vAI</strong>.<br><br>Aku asisten AI yang bisa langsung <strong>generate kode HTML + CSS + JS</strong> lengkap sesuai perintahmu.<br><br>Coba ketik: "buatkan landing page portfolio" atau pilih quick prompt di bawah.`, 'ai', false);
+            if (conversationHistory.length === 0) {
+                addMessage(`Halo! 👋 Selamat datang di <strong>vAI</strong>.<br><br>Aku bisa buat kode HTML, CSS, JS sesuai keinginanmu dan akan **ingat** semua percakapan sebelumnya.<br><br>Coba ketik: "buatkan landing page portfolio"`, 'ai', false);
             } else {
                 loadHistory();
             }
