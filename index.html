@@ -2,253 +2,319 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Zombie Shooter Santai</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Zombie Shooter Pro</title>
+
 <style>
-body {
+:root{
+  --bg:#0b0b0b;
+  --red:#ff2e2e;
+  --dark:#111;
+  --light:#eee;
+}
+
+body{
   margin:0;
-  background:#0f172a;
-  color:white;
+  background:var(--bg);
+  color:var(--light);
   font-family:sans-serif;
+  overflow:hidden;
+}
+
+/* canvas full */
+canvas{
+  position:fixed;
+  top:0;
+  left:0;
+}
+
+/* UI bawah */
+#bottomUI{
+  position:fixed;
+  bottom:0;
+  width:100%;
+  display:flex;
+  justify-content:space-around;
+  background:#000000cc;
+  padding:10px;
+}
+
+.btn{
+  background:var(--red);
+  border:none;
+  padding:12px;
+  border-radius:10px;
+  color:white;
+}
+
+/* panel */
+.panel{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:#000000ee;
+  display:none;
+  overflow:auto;
+}
+
+.panel h2{
   text-align:center;
 }
 
-#menu button {
+.card{
+  background:#111;
+  margin:10px;
   padding:10px;
-  margin:5px;
-  border:none;
-  background:#22c55e;
-  color:black;
-  cursor:pointer;
-  border-radius:8px;
+  border-radius:10px;
 }
 
-canvas {
-  background:black;
-  border:2px solid white;
-  margin-top:10px;
-}
-
-.panel {
-  display:none;
-}
-
-input {
-  padding:8px;
-  margin:5px;
-  border-radius:6px;
-  border:none;
-}
-
-button {
-  cursor:pointer;
-}
-
-.shop button {
-  display:block;
-  margin:10px auto;
-  padding:10px;
+/* toggle */
+.toggle{
+  position:fixed;
+  top:10px;
+  right:10px;
 }
 </style>
 </head>
+
 <body>
 
-<h1>🧟 Zombie Shooter Santai</h1>
+<canvas id="game"></canvas>
 
-<div id="menu">
-  <button onclick="showMenu('game')">🎮 Game</button>
-  <button onclick="showMenu('shop')">💳 Shop</button>
-  <button onclick="showMenu('user')">👤 User</button>
+<!-- TOGGLE -->
+<button class="toggle btn" onclick="toggleTheme()">🌓</button>
+
+<!-- UI BAWAH -->
+<div id="bottomUI">
+  <button class="btn" onclick="openPanel('weapon')">🔫 Weapon</button>
+  <button class="btn" onclick="openPanel('shop')">💳 Shop</button>
+  <button class="btn" onclick="openPanel('user')">👤</button>
 </div>
 
-<!-- GAME -->
-<div id="game" class="panel">
-  <h3>Coins: <span id="coins">0</span> | Wave: <span id="wave">1</span></h3>
-  <h4>Weapon Level: <span id="weapon">1</span></h4>
-
-  <button onclick="upgradeWeapon()">Upgrade Senjata</button>
-
-  <canvas id="canvas" width="800" height="400"></canvas>
+<!-- WEAPON -->
+<div id="weapon" class="panel">
+  <h2>Upgrade Senjata</h2>
+  <div id="weaponList"></div>
+  <button class="btn" onclick="closePanel()">Close</button>
 </div>
 
 <!-- SHOP -->
-<div id="shop" class="panel shop">
-  <h2>💳 Convert (SIMULASI)</h2>
-  <p>⚠️ Ini hanya saldo game, tidak bisa ditarik</p>
-
-  <button onclick="convert(3000,10000)">3000 → 10.000</button>
-  <button onclick="convert(8000,50000)">8000 → 50.000</button>
-  <button onclick="convert(15000,500000)">15000 → 500.000</button>
-
-  <h3>Saldo Game: <span id="balance">0</span></h3>
+<div id="shop" class="panel">
+  <h2>Convert (SIMULASI)</h2>
+  <div class="card">
+    <button class="btn" onclick="convert(3000,10000)">3000 → 10K</button>
+    <button class="btn" onclick="convert(8000,50000)">8000 → 50K</button>
+    <button class="btn" onclick="convert(15000,500000)">15000 → 500K</button>
+  </div>
+  <p>Saldo: <span id="balance">0</span></p>
+  <button class="btn" onclick="closePanel()">Close</button>
 </div>
 
 <!-- USER -->
 <div id="user" class="panel">
-  <h3>User ID: <span id="uid"></span></h3>
+  <h2>User</h2>
+  <p>ID: <span id="uid"></span></p>
 
-  <h3>Admin Panel (Local)</h3>
-  <input id="targetId" placeholder="User ID">
-  <input id="addCoin" placeholder="Tambah coin">
-  <button onclick="adminAddCoin()">Tambah</button>
+  <div id="adminPanel" style="display:none">
+    <h3>Admin</h3>
+    <input id="addCoin" placeholder="Tambah coin">
+    <button class="btn" onclick="addCoin()">Tambah</button>
+  </div>
+
+  <button class="btn" onclick="closePanel()">Close</button>
 </div>
 
 <script>
-// ================== DATA ==================
-let coins = 0;
-let balance = 0;
-let wave = 1;
-let weaponLevel = 1;
+// ====== SETUP CANVAS ======
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-let weaponStats = [
-  {price:100, damage:10, fireRate:400},
-  {price:250, damage:15, fireRate:300},
-  {price:300, damage:20, fireRate:250},
-  {price:500, damage:30, fireRate:200},
-  {price:750, damage:45, fireRate:150}
-];
+function resize(){
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+}
+resize();
+window.addEventListener("resize",resize);
 
+// ====== PLAYER ======
+let player = {
+  x:100,
+  y:200,
+  size:20
+};
+
+// touch move
+canvas.addEventListener("touchmove",(e)=>{
+  let t = e.touches[0];
+  player.x = t.clientX;
+  player.y = t.clientY;
+});
+
+// ====== DATA ======
+let coins=0, balance=0, wave=1;
 let userId = Math.floor(Math.random()*999999);
 document.getElementById("uid").innerText = userId;
 
-// ================== CANVAS ==================
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+// admin (cuma device ini)
+if(localStorage.getItem("admin")!=="true"){
+  localStorage.setItem("admin","true");
+}
+document.getElementById("adminPanel").style.display="block";
 
-let bullets = [];
-let zombies = [];
-let lastShot = 0;
+// ====== WEAPON ======
+let weapons=[
+ {name:"Pistol",price:100,damage:10,rate:400},
+ {name:"SMG",price:250,damage:8,rate:150},
+ {name:"Shotgun",price:300,damage:25,rate:700},
+ {name:"Rifle",price:500,damage:20,rate:250},
+ {name:"Laser",price:750,damage:40,rate:100}
+];
 
-// ================== SOUND ==================
-function playShoot(){
-  let audio = new Audio();
-  audio.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
-  audio.play();
+let currentWeapon=0;
+let lastShot=0;
+
+function renderWeapons(){
+  let html="";
+  weapons.forEach((w,i)=>{
+    html+=`
+    <div class="card">
+      <b>${w.name}</b><br>
+      Damage:${w.damage}<br>
+      <button class="btn" onclick="buyWeapon(${i})">${w.price}</button>
+    </div>`;
+  });
+  document.getElementById("weaponList").innerHTML=html;
+}
+renderWeapons();
+
+function buyWeapon(i){
+  if(coins>=weapons[i].price){
+    coins-=weapons[i].price;
+    currentWeapon=i;
+  }
 }
 
-// ================== SHOOT ==================
-canvas.addEventListener("click", ()=>{
-  let now = Date.now();
-  let weapon = weaponStats[weaponLevel-1];
+// ====== SHOOT ======
+let bullets=[];
+canvas.addEventListener("click",(e)=>{
+  let now=Date.now();
+  let w=weapons[currentWeapon];
+  if(now-lastShot<w.rate)return;
 
-  if (now - lastShot > weapon.fireRate){
-    bullets.push({x:50,y:200,speed:6,damage:weapon.damage});
-    playShoot();
-    lastShot = now;
-  }
+  let angle = Math.atan2(e.clientY-player.y, e.clientX-player.x);
+
+  bullets.push({
+    x:player.x,
+    y:player.y,
+    dx:Math.cos(angle)*8,
+    dy:Math.sin(angle)*8,
+    dmg:w.damage
+  });
+
+  lastShot=now;
 });
 
-// ================== SPAWN ==================
+// ====== ZOMBIE ======
+let zombies=[];
+
 function spawnZombie(){
   zombies.push({
-    x:800,
-    y:Math.random()*350,
-    hp:20 + wave*5,
+    x:canvas.width,
+    y:Math.random()*canvas.height,
+    hp:30,
     boss:false
   });
 }
 
 function spawnBoss(){
   zombies.push({
-    x:800,
-    y:150,
-    hp:200 + wave*20,
+    x:canvas.width,
+    y:canvas.height/2,
+    hp:300,
     boss:true
   });
 }
 
-// ================== LOOP ==================
+// ====== LOOP ======
 function loop(){
-  ctx.clearRect(0,0,800,400);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // player
+  ctx.fillStyle="white";
+  ctx.fillRect(player.x,player.y,20,20);
 
   // bullets
   bullets.forEach((b,i)=>{
-    b.x += b.speed;
+    b.x+=b.dx;
+    b.y+=b.dy;
     ctx.fillStyle="yellow";
     ctx.fillRect(b.x,b.y,5,5);
   });
 
   // zombies
   zombies.forEach((z,zi)=>{
-    z.x -= z.boss ? 0.5 : 1;
-
-    ctx.fillStyle = z.boss ? "red" : "green";
+    z.x-=z.boss?0.5:1;
+    ctx.fillStyle=z.boss?"red":"green";
     ctx.fillRect(z.x,z.y,20,20);
 
     bullets.forEach((b,bi)=>{
-      if (b.x > z.x && b.x < z.x+20 && b.y > z.y && b.y < z.y+20){
-        z.hp -= b.damage;
+      if(b.x>z.x && b.x<z.x+20 && b.y>z.y && b.y<z.y+20){
+        z.hp-=b.dmg;
         bullets.splice(bi,1);
       }
     });
 
-    if (z.hp <= 0){
-      coins += z.boss ? 50 : 5;
+    if(z.hp<=0){
+      coins+=z.boss?50:5;
       zombies.splice(zi,1);
     }
   });
 
-  document.getElementById("coins").innerText = coins;
-  document.getElementById("wave").innerText = wave;
-  document.getElementById("weapon").innerText = weaponLevel;
-
   requestAnimationFrame(loop);
 }
+loop();
 
 setInterval(()=>{
   spawnZombie();
-  if (wave % 5 === 0) spawnBoss();
+  if(wave%5===0)spawnBoss();
   wave++;
 },3000);
 
-loop();
-
-// ================== UPGRADE ==================
-function upgradeWeapon(){
-  if (weaponLevel >= weaponStats.length) return alert("Max!");
-
-  let next = weaponStats[weaponLevel];
-
-  if (coins >= next.price){
-    coins -= next.price;
-    weaponLevel++;
-  } else {
-    alert("Coin kurang!");
-  }
-}
-
-// ================== CONVERT ==================
+// ====== SHOP ======
 function convert(c,m){
-  if (coins >= c){
-    coins -= c;
-    balance += m;
-    document.getElementById("balance").innerText = balance;
-  } else {
-    alert("Coin kurang!");
+  if(coins>=c){
+    coins-=c;
+    balance+=m;
+    document.getElementById("balance").innerText=balance;
   }
 }
 
-// ================== ADMIN ==================
-function adminAddCoin(){
-  let target = document.getElementById("targetId").value;
-  let amount = parseInt(document.getElementById("addCoin").value);
-
-  if (parseInt(target) === userId){
-    coins += amount;
-    alert("Berhasil!");
-  } else {
-    alert("ID tidak cocok (demo local)");
-  }
+// ====== ADMIN ======
+function addCoin(){
+  let val=parseInt(document.getElementById("addCoin").value);
+  coins+=val;
 }
 
-// ================== MENU ==================
-function showMenu(m){
+// ====== PANEL ======
+function openPanel(id){
+  document.getElementById(id).style.display="block";
+}
+function closePanel(){
   document.querySelectorAll(".panel").forEach(p=>p.style.display="none");
-  document.getElementById(m).style.display="block";
 }
 
-// default
-showMenu("game");
+// ====== THEME ======
+let dark=true;
+function toggleTheme(){
+  dark=!dark;
+  document.body.style.background=dark?"#0b0b0b":"#ddd";
+  document.body.style.color=dark?"white":"black";
+}
 
+// ====== BLOCK SCROLL ======
+document.body.addEventListener("touchmove",(e)=>e.preventDefault(),{passive:false});
 </script>
 
 </body>
