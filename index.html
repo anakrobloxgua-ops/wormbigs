@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Zombie Shooter Pro</title>
+<title>Zombie Shooter Fix</title>
 
 <style>
 body{
@@ -14,14 +14,14 @@ body{
   overflow:hidden;
 }
 
-/* CANVAS CENTER */
+/* CANVAS */
 canvas{
   position:fixed;
   top:0;
   left:0;
 }
 
-/* UI BOTTOM */
+/* UI */
 #ui{
   position:fixed;
   bottom:10px;
@@ -31,7 +31,6 @@ canvas{
   gap:10px;
 }
 
-/* BUTTON */
 .btn{
   background:#ff2e2e;
   padding:12px;
@@ -71,14 +70,12 @@ canvas{
 .joystick{
   position:fixed;
   bottom:80px;
+  left:20px;
   width:120px;
   height:120px;
   border-radius:50%;
   background:#222;
 }
-
-#leftJoy{ left:20px; }
-#rightJoy{ right:20px; }
 
 .stick{
   width:40px;
@@ -89,6 +86,28 @@ canvas{
   top:40px;
   left:40px;
 }
+
+/* SHOOT BUTTON */
+#shootBtn{
+  position:fixed;
+  bottom:100px;
+  right:20px;
+  padding:20px;
+  border-radius:50%;
+  background:red;
+}
+
+/* POPUP */
+#popup{
+  position:fixed;
+  top:20%;
+  left:50%;
+  transform:translateX(-50%);
+  background:#000;
+  padding:15px;
+  border-radius:10px;
+  display:none;
+}
 </style>
 </head>
 
@@ -96,15 +115,22 @@ canvas{
 
 <canvas id="game"></canvas>
 
+<div id="popup"></div>
+
 <!-- UI -->
 <div id="ui">
   <button class="btn" onclick="openPanel('weapon')">🔫</button>
   <button class="btn" onclick="openPanel('shop')">💳</button>
+  <button class="btn" onclick="openPanel('user')">👤</button>
 </div>
 
 <!-- JOYSTICK -->
-<div id="leftJoy" class="joystick"><div class="stick" id="stickL"></div></div>
-<div id="rightJoy" class="joystick"><div class="stick" id="stickR"></div></div>
+<div class="joystick" id="joy">
+  <div class="stick" id="stick"></div>
+</div>
+
+<!-- SHOOT BUTTON -->
+<button id="shootBtn" onclick="shoot()">🔥</button>
 
 <!-- WEAPON -->
 <div id="weapon" class="panel">
@@ -116,14 +142,26 @@ canvas{
 <!-- SHOP -->
 <div id="shop" class="panel">
 <h2>Convert</h2>
-
 <div class="card">
 <button class="btn" onclick="convert(3000,10000)">3000 → 10K</button>
 <button class="btn" onclick="convert(8000,50000)">8000 → 50K</button>
 <button class="btn" onclick="convert(15000,500000)">15000 → 500K</button>
 </div>
-
 <p>Saldo anda sekarang: <span id="saldo">0</span></p>
+<button class="btn" onclick="closePanel()">Tutup</button>
+</div>
+
+<!-- USER -->
+<div id="user" class="panel">
+<h2>User</h2>
+<p>ID: <span id="uid"></span></p>
+<p>Coin anda sekarang: <span id="coinText">0</span></p>
+
+<div id="adminPanel">
+  <h3>Admin</h3>
+  <input id="addCoin" placeholder="Tambah coin">
+  <button class="btn" onclick="addCoin()">Tambah</button>
+</div>
 
 <button class="btn" onclick="closePanel()">Tutup</button>
 </div>
@@ -134,67 +172,59 @@ const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
 
 function resize(){
-  canvas.width=innerWidth;
-  canvas.height=innerHeight;
+ canvas.width=innerWidth;
+ canvas.height=innerHeight;
 }
 resize();
 window.addEventListener("resize",resize);
 
+// ===== DATA =====
+let coins=0,balance=0;
+let userId=Math.floor(Math.random()*999999);
+document.getElementById("uid").innerText=userId;
+
 // ===== PLAYER =====
-let player={x:200,y:200,size:15};
+let player={x:200,y:200};
 
 // ===== JOYSTICK =====
 let move={x:0,y:0};
-let aim={x:0,y:0};
+const joy=document.getElementById("joy");
+const stick=document.getElementById("stick");
 
-function setupJoystick(el,stick,cb){
-  let rect;
-  el.addEventListener("touchstart",e=>{
-    rect=el.getBoundingClientRect();
-  });
+joy.addEventListener("touchmove",e=>{
+ let t=e.touches[0];
+ let rect=joy.getBoundingClientRect();
+ let x=t.clientX-rect.left-60;
+ let y=t.clientY-rect.top-60;
 
-  el.addEventListener("touchmove",e=>{
-    let t=e.touches[0];
-    let x=t.clientX-rect.left-60;
-    let y=t.clientY-rect.top-60;
+ stick.style.left=(x+40)+"px";
+ stick.style.top=(y+40)+"px";
 
-    stick.style.left=(x+40)+"px";
-    stick.style.top=(y+40)+"px";
+ move.x=x/40;
+ move.y=y/40;
+});
 
-    cb(x/40,y/40);
-  });
-
-  el.addEventListener("touchend",()=>{
-    stick.style.left="40px";
-    stick.style.top="40px";
-    cb(0,0);
-  });
-}
-
-setupJoystick(leftJoy,stickL,(x,y)=>{move.x=x;move.y=y;});
-setupJoystick(rightJoy,stickR,(x,y)=>{aim.x=x;aim.y=y;});
-
-// ===== DATA =====
-let coins=0,balance=0;
+joy.addEventListener("touchend",()=>{
+ stick.style.left="40px";
+ stick.style.top="40px";
+ move.x=0;move.y=0;
+});
 
 // ===== WEAPON =====
 let weapons=[
- {name:"Pistol",price:100,damage:10,rate:400},
- {name:"SMG",price:250,damage:8,rate:150},
- {name:"Shotgun",price:300,damage:25,rate:700},
- {name:"Laser",price:750,damage:40,rate:100}
+ {name:"Pistol",price:100,damage:10},
+ {name:"SMG",price:250,damage:8},
+ {name:"Shotgun",price:300,damage:25}
 ];
 
 let currentWeapon=0;
-let lastShot=0;
 
-// ===== RENDER WEAPON =====
 function renderWeapons(){
  let html="";
  weapons.forEach((w,i)=>{
   html+=`
   <div class="card" id="w${i}">
-   ${w.name} (DMG:${w.damage})<br>
+   ${w.name}<br>
    <button class="btn" onclick="buyWeapon(${i})">${w.price}</button>
   </div>`;
  });
@@ -206,7 +236,6 @@ function buyWeapon(i){
  if(coins>=weapons[i].price){
   coins-=weapons[i].price;
   currentWeapon=i;
-
   let el=document.getElementById("w"+i);
   el.classList.add("success");
   el.innerHTML+="<p>Buy Successful</p>";
@@ -215,49 +244,32 @@ function buyWeapon(i){
 
 // ===== SHOOT =====
 let bullets=[];
-
 function shoot(){
- let now=Date.now();
- let w=weapons[currentWeapon];
-
- if(now-lastShot<w.rate)return;
-
- bullets.push({
-  x:player.x,
-  y:player.y,
-  dx:aim.x*10,
-  dy:aim.y*10,
-  dmg:w.damage
- });
-
- lastShot=now;
+ bullets.push({x:player.x,y:player.y,dx:8,dy:0,dmg:weapons[currentWeapon].damage});
 }
 
 // ===== ZOMBIE =====
 let zombies=[];
-
 function spawnZombie(){
- zombies.push({
-  x:canvas.width,
-  y:Math.random()*canvas.height,
-  hp:30,
-  boss:false
- });
+ zombies.push({x:canvas.width,y:Math.random()*canvas.height,hp:30});
+}
+
+// ===== POPUP =====
+function showPopup(text){
+ let p=document.getElementById("popup");
+ p.innerText=text;
+ p.style.display="block";
+ setTimeout(()=>p.style.display="none",1500);
 }
 
 // ===== LOOP =====
 function loop(){
  ctx.clearRect(0,0,canvas.width,canvas.height);
 
- // move player
  player.x+=move.x*3;
  player.y+=move.y*3;
 
- // shoot
- if(aim.x!==0||aim.y!==0) shoot();
-
- // player (circle)
- ctx.fillStyle="white";
+ // player
  ctx.beginPath();
  ctx.arc(player.x,player.y,15,0,Math.PI*2);
  ctx.fill();
@@ -265,24 +277,15 @@ function loop(){
  // bullets
  bullets.forEach((b,i)=>{
   b.x+=b.dx;
-  b.y+=b.dy;
-  ctx.fillStyle="yellow";
-  ctx.beginPath();
-  ctx.arc(b.x,b.y,4,0,Math.PI*2);
-  ctx.fill();
+  ctx.fillRect(b.x,b.y,5,5);
  });
 
- // zombies (circle + mata)
+ // zombies
  zombies.forEach((z,zi)=>{
   z.x-=1;
-
-  ctx.fillStyle="green";
   ctx.beginPath();
   ctx.arc(z.x,z.y,15,0,Math.PI*2);
   ctx.fill();
-
-  ctx.fillStyle="red";
-  ctx.fillRect(z.x-5,z.y-5,4,4);
 
   bullets.forEach((b,bi)=>{
     let dist=Math.hypot(b.x-z.x,b.y-z.y);
@@ -294,9 +297,12 @@ function loop(){
 
   if(z.hp<=0){
     coins+=5;
+    showPopup("Anda mendapatkan 5 coin, semangat!");
     zombies.splice(zi,1);
   }
  });
+
+ document.getElementById("coinText").innerText=coins;
 
  requestAnimationFrame(loop);
 }
@@ -313,6 +319,12 @@ function convert(c,m){
  }
 }
 
+// ===== ADMIN =====
+function addCoin(){
+ let val=parseInt(document.getElementById("addCoin").value);
+ coins+=val;
+}
+
 // ===== PANEL =====
 function openPanel(id){
  document.getElementById(id).style.display="block";
@@ -321,7 +333,7 @@ function closePanel(){
  document.querySelectorAll(".panel").forEach(p=>p.style.display="none");
 }
 
-// ===== BLOCK SCROLL =====
+// BLOCK SCROLL
 document.body.addEventListener("touchmove",e=>e.preventDefault(),{passive:false});
 </script>
 
