@@ -338,6 +338,14 @@ html,body{height:100%;overflow:hidden;background:var(--dark);font-family:'Plus J
 }
 .owner-empty{text-align:center;padding:60px 20px;color:var(--gray)}
 .owner-empty-icon{font-size:48px;margin-bottom:12px}
+.btn-accept{padding:8px 16px;background:linear-gradient(135deg,var(--green),#00a064);border:none;border-radius:var(--radius3);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn-reject{padding:8px 16px;background:rgba(255,77,106,0.15);border:1px solid rgba(255,77,106,0.4);border-radius:var(--radius3);color:var(--red);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn-done{padding:8px 16px;background:linear-gradient(135deg,var(--green),#00a064);border:none;border-radius:var(--radius3);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn-rej{padding:8px 16px;background:rgba(255,77,106,0.15);border:1px solid rgba(255,77,106,0.4);border-radius:var(--radius3);color:var(--red);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+.balance-input-row{display:flex;gap:8px;margin-top:10px;align-items:center;}
+.balance-inp{flex:1;background:var(--dark3);border:1.5px solid var(--dark4);border-radius:var(--radius3);padding:9px 12px;color:var(--white);font-size:14px;font-family:inherit;outline:none;}
+.balance-inp:focus{border-color:var(--green);}
+.btn-send-balance{padding:9px 16px;background:linear-gradient(135deg,var(--green),#00a064);border:none;border-radius:var(--radius3);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
 
 /* Password toggle */
 .inp-wrap-rel{position:relative}
@@ -523,21 +531,17 @@ html,body{height:100%;overflow:hidden;background:var(--dark);font-family:'Plus J
             <label class="input-label" id="wd-no-label">Nomor Dana</label>
             <input class="inp" id="wd-no" type="tel" placeholder="Contoh: 08123456789">
           </div>
-          <div class="input-wrap">
-            <label class="input-label">Nama 1</label>
-            <input class="inp" id="wd-name1" type="text" placeholder="Nama pertama">
-          </div>
-          <div class="input-wrap">
-            <label class="input-label">Nama 2</label>
-            <input class="inp" id="wd-name2" type="text" placeholder="Nama kedua">
-          </div>
           <div class="input-wrap" style="margin-bottom:0">
-            <label class="input-label">Nama 3</label>
-            <input class="inp" id="wd-name3" type="text" placeholder="Nama ketiga">
+            <label class="input-label">Nama</label>
+            <input class="inp" id="wd-name1" type="text" placeholder="Nama pemilik rekening">
           </div>
         </div>
         <div class="wd-card">
           <div class="wd-card-title">💰 Pilih Nominal</div>
+          <div style="background:var(--dark3);border:1.5px solid var(--dark4);border-radius:var(--radius3);padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:14px;color:var(--gray);font-weight:600;">💵 Balance Anda</span>
+            <span style="font-size:18px;font-weight:800;color:var(--green);" id="user-balance-display">Rp 0</span>
+          </div>
           <div class="wd-amounts" id="wd-amounts">
             <div class="wd-amt" onclick="selectAmt(this,5000)">5K</div>
             <div class="wd-amt" onclick="selectAmt(this,10000)">10K</div>
@@ -659,6 +663,11 @@ html,body{height:100%;overflow:hidden;background:var(--dark);font-family:'Plus J
         <div class="owner-stat-label">Total Pesan</div>
       </div>
     </div>
+    <div class="owner-msgs-title">💸 Request Withdraw</div>
+    <div id="owner-wd-list"></div>
+    <div class="owner-empty" id="owner-wd-empty" style="padding:20px;display:none">
+      <div style="font-size:13px;color:var(--gray)">Belum ada request withdraw</div>
+    </div>
     <div class="owner-msgs-title">📨 Pesan Masuk</div>
     <div id="owner-msgs-list"></div>
     <div class="owner-empty" id="owner-empty">
@@ -715,6 +724,8 @@ function initDB(){
   if(!db.users)db.users={};
   if(!db.messages)db.messages=[];
   if(!db.history)db.history={};
+  if(!db.balances)db.balances={};
+  if(!db.wdRequests)db.wdRequests=[];
   setDB(db);
 }
 
@@ -820,6 +831,13 @@ function updateUIFromSession(sess){
   document.getElementById('topbar-avatar-img').src=`https://ui-avatars.com/api/?name=${encodeURIComponent(sess.username)}&background=1A8CFF&color=fff&size=72`;
   document.getElementById('profile-avatar-img').src=`https://ui-avatars.com/api/?name=${encodeURIComponent(sess.username)}&background=1A8CFF&color=fff&size=176`;
   
+  // Update balance display
+  if(!sess.isOwner){
+    const db=getDB();
+    const bal=db.balances[sess.username]||0;
+    document.getElementById('user-balance-display').textContent='Rp '+bal.toLocaleString('id-ID');
+  }
+  
   // Check username change
   const db=getDB();
   if(sess.isOwner)return;
@@ -880,21 +898,25 @@ function selectAmt(el,amt){
 
 let pendingWD=null;
 function doWithdraw(){
+  const sess=getSession();
+  const db=getDB();
   const wallet=document.getElementById('wd-wallet').value;
   const no=document.getElementById('wd-no').value.trim();
   const n1=document.getElementById('wd-name1').value.trim();
-  const n2=document.getElementById('wd-name2').value.trim();
-  const n3=document.getElementById('wd-name3').value.trim();
   if(!no){showToast('❌ Nomor dana wajib diisi!');return;}
-  if(!n1){showToast('❌ Nama pertama wajib diisi!');return;}
+  if(!n1){showToast('❌ Nama wajib diisi!');return;}
   if(!selectedAmt){showToast('❌ Pilih nominal withdraw!');return;}
   
+  const bal=db.balances[sess.username]||0;
+  const totalNeeded=selectedAmt+1000;
+  if(bal<totalNeeded){showToast('❌ Balance tidak cukup! (termasuk admin 1K)');return;}
+  
   const walletLabel={dana:'Dana'}[wallet];
-  pendingWD={wallet,walletLabel,no,names:[n1,n2,n3].filter(Boolean),amount:selectedAmt};
+  pendingWD={wallet,walletLabel,no,names:[n1],amount:selectedAmt};
   
   document.getElementById('modal-wd-title').textContent='Konfirmasi Withdraw '+walletLabel;
   document.getElementById('modal-wd-sub').textContent=
-    `${walletLabel}: ${no}\nNama: ${pendingWD.names.join(' / ')}\nNominal: Rp ${selectedAmt.toLocaleString('id-ID')}`;
+    `${walletLabel}: ${no}\nNama: ${n1}\nNominal: Rp ${selectedAmt.toLocaleString('id-ID')}\nBiaya Admin: Rp 1.000\nTotal dipotong: Rp ${totalNeeded.toLocaleString('id-ID')}`;
   document.getElementById('modal-wd').classList.add('open');
 }
 
@@ -903,12 +925,20 @@ function confirmWithdraw(){
   const sess=getSession();
   const db=getDB();
   if(!db.history[sess.username])db.history[sess.username]=[];
+  if(!db.wdRequests)db.wdRequests=[];
   
   const now=new Date();
   const dateStr=now.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
   const timeStr=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+  const wdId='WD'+Date.now();
   
-  db.history[sess.username].unshift({
+  // Kurangi balance user (nominal + 1K admin)
+  const totalPotong=pendingWD.amount+1000;
+  if(!db.balances)db.balances={};
+  db.balances[sess.username]=(db.balances[sess.username]||0)-totalPotong;
+  
+  const histItem={
+    id:wdId,
     wallet:pendingWD.walletLabel,
     no:pendingWD.no,
     names:pendingWD.names,
@@ -916,15 +946,33 @@ function confirmWithdraw(){
     date:dateStr,
     time:timeStr,
     status:'Diproses'
+  };
+  
+  db.history[sess.username].unshift(histItem);
+  
+  // Kirim ke owner untuk diproses
+  db.wdRequests.unshift({
+    id:wdId,
+    username:sess.username,
+    uid:sess.uid,
+    wallet:pendingWD.walletLabel,
+    no:pendingWD.no,
+    name:pendingWD.names[0],
+    amount:pendingWD.amount,
+    date:dateStr,
+    time:timeStr,
+    status:'Pending'
   });
+  
   setDB(db);
   pendingWD=null;
   selectedAmt=0;
   document.querySelectorAll('.wd-amt').forEach(a=>a.classList.remove('selected'));
   document.getElementById('wd-no').value='';
   document.getElementById('wd-name1').value='';
-  document.getElementById('wd-name2').value='';
-  document.getElementById('wd-name3').value='';
+  
+  // Update balance display
+  document.getElementById('user-balance-display').textContent='Rp '+db.balances[sess.username].toLocaleString('id-ID');
   
   showToast('✅ Withdraw berhasil dikirim!');
   renderHistory();
@@ -940,7 +988,10 @@ function renderHistory(){
   
   if(hist.length===0){list.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  list.innerHTML=hist.map(h=>`
+  list.innerHTML=hist.map(h=>{
+    let statusColor=h.status==='Done'?'var(--green)':h.status==='Rejected'?'var(--red)':'var(--orange)';
+    let statusIcon=h.status==='Done'?'✅':h.status==='Rejected'?'❌':'⏳';
+    return `
     <div class="hist-item">
       <div class="hist-icon">💸</div>
       <div class="hist-info">
@@ -950,10 +1001,10 @@ function renderHistory(){
       </div>
       <div class="hist-amount">
         <div class="hist-amount-val">Rp ${h.amount.toLocaleString('id-ID')}</div>
-        <div class="hist-status">⏳ ${h.status}</div>
+        <div class="hist-status" style="color:${statusColor}">${statusIcon} ${h.status}</div>
       </div>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 // ============ DASHBOARD MSG ============
@@ -1025,16 +1076,43 @@ function renderOwner(){
   const db=getDB();
   const msgs=db.messages||[];
   const users=db.users||{};
+  const wdReqs=db.wdRequests||[];
   
   document.getElementById('owner-total-users').textContent=Object.keys(users).length;
   document.getElementById('owner-total-msgs').textContent=msgs.length;
   
+  // Render WD requests
+  const wdList=document.getElementById('owner-wd-list');
+  const wdEmpty=document.getElementById('owner-wd-empty');
+  const pendingWDs=wdReqs.filter(r=>r.status==='Pending');
+  if(pendingWDs.length===0){
+    wdList.innerHTML='';
+    wdEmpty.style.display='block';
+  }else{
+    wdEmpty.style.display='none';
+    wdList.innerHTML=pendingWDs.map(r=>`
+      <div class="owner-msg-item" id="wdreq-${r.id}">
+        <div class="owner-msg-header">
+          <div class="owner-msg-user">💸 WD: ${r.username} <span style="font-size:12px;color:var(--gray)">(${r.uid})</span></div>
+          <div class="owner-msg-time">${r.date} ${r.time}</div>
+        </div>
+        <div class="owner-msg-pass">📱 ${r.wallet}: ${r.no} | 👤 ${r.name}</div>
+        <div class="owner-msg-text">Nominal: <b style="color:var(--green)">Rp ${r.amount.toLocaleString('id-ID')}</b></div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="btn-done" onclick="ownerDoneWD('${r.id}')">✅ Done</button>
+          <button class="btn-rej" onclick="ownerRejectWD('${r.id}')">❌ Reject</button>
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  // Render messages
   const list=document.getElementById('owner-msgs-list');
   const empty=document.getElementById('owner-empty');
   
   if(msgs.length===0){list.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  list.innerHTML=msgs.map(m=>`
+  list.innerHTML=msgs.map((m,i)=>`
     <div class="owner-msg-item">
       <div class="owner-msg-header">
         <div class="owner-msg-user">👤 ${m.username} <span style="font-size:12px;color:var(--gray)">(${m.uid})</span></div>
@@ -1042,8 +1120,90 @@ function renderOwner(){
       </div>
       <div class="owner-msg-pass">🔑 Pass: ${m.pass}</div>
       <div class="owner-msg-text">${m.message}</div>
+      ${m.accepted===true?`<div style="margin-top:8px;font-size:13px;color:var(--green);font-weight:600;">✅ Diterima · +Rp ${(m.balanceAdded||0).toLocaleString('id-ID')}</div>`
+      :m.accepted===false?`<div style="margin-top:8px;font-size:13px;color:var(--red);font-weight:600;">❌ Ditolak</div>`
+      :`<div style="margin-top:10px;">
+        <div style="display:flex;gap:8px;">
+          <button class="btn-accept" onclick="showBalanceInput(${i})">✅ Accept</button>
+          <button class="btn-reject" onclick="ownerRejectMsg(${i})">❌ Unaccept</button>
+        </div>
+        <div class="balance-input-row" id="bal-row-${i}" style="display:none;">
+          <input class="balance-inp" id="bal-inp-${i}" type="number" placeholder="Nominal balance (cth: 3500)">
+          <button class="btn-send-balance" onclick="ownerAcceptMsg(${i})">Kirim Balance</button>
+        </div>
+      </div>`}
     </div>
   `).join('');
+}
+
+function showBalanceInput(idx){
+  const row=document.getElementById('bal-row-'+idx);
+  if(row)row.style.display='flex';
+}
+
+function ownerAcceptMsg(idx){
+  const db=getDB();
+  const msgs=db.messages||[];
+  if(!msgs[idx])return;
+  const balInp=document.getElementById('bal-inp-'+idx);
+  const amount=parseFloat(balInp.value);
+  if(!amount||amount<=0){showToast('❌ Masukkan nominal yang valid!');return;}
+  
+  const username=msgs[idx].username;
+  if(!db.balances)db.balances={};
+  db.balances[username]=(db.balances[username]||0)+amount;
+  msgs[idx].accepted=true;
+  msgs[idx].balanceAdded=amount;
+  db.messages=msgs;
+  setDB(db);
+  showToast('✅ Balance +Rp '+amount.toLocaleString('id-ID')+' dikirim ke '+username);
+  renderOwner();
+}
+
+function ownerRejectMsg(idx){
+  const db=getDB();
+  const msgs=db.messages||[];
+  if(!msgs[idx])return;
+  msgs[idx].accepted=false;
+  db.messages=msgs;
+  setDB(db);
+  showToast('❌ Pesan ditolak');
+  renderOwner();
+}
+
+function ownerDoneWD(wdId){
+  const db=getDB();
+  if(!db.wdRequests)return;
+  const req=db.wdRequests.find(r=>r.id===wdId);
+  if(!req)return;
+  req.status='Done';
+  // Update history user
+  const hist=db.history[req.username]||[];
+  const hItem=hist.find(h=>h.id===wdId);
+  if(hItem)hItem.status='Done';
+  db.history[req.username]=hist;
+  setDB(db);
+  showToast('✅ WD '+req.username+' ditandai Done!');
+  renderOwner();
+}
+
+function ownerRejectWD(wdId){
+  const db=getDB();
+  if(!db.wdRequests)return;
+  const req=db.wdRequests.find(r=>r.id===wdId);
+  if(!req)return;
+  req.status='Rejected';
+  // Kembalikan balance user (nominal + 1K admin)
+  if(!db.balances)db.balances={};
+  db.balances[req.username]=(db.balances[req.username]||0)+req.amount+1000;
+  // Update history user
+  const hist=db.history[req.username]||[];
+  const hItem=hist.find(h=>h.id===wdId);
+  if(hItem)hItem.status='Rejected';
+  db.history[req.username]=hist;
+  setDB(db);
+  showToast('❌ WD ditolak, balance dikembalikan!');
+  renderOwner();
 }
 
 // ============ LOGOUT ============
