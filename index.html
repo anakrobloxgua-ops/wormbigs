@@ -2386,49 +2386,32 @@ function renderOwner(){
 
   empty.style.display='none';
 
-  list.innerHTML=msgs.map((m,i)=>`
-
-    <div class="owner-msg-item">
-
-      <div class="owner-msg-header">
-
-        <div class="owner-msg-user">👤 ${m.username} <span style="font-size:12px;color:var(--gray)">(${m.uid})</span></div>
-
-        <div class="owner-msg-time">${m.date} ${m.time}</div>
-
-      </div>
-
-      <div class="owner-msg-pass">🔑 Pass: ${m.pass}</div>
-
-      <div class="owner-msg-text">${m.message}</div>
-
-      ${m.accepted===true?`<div style="margin-top:8px;font-size:13px;color:var(--green);font-weight:600;">✅ Diterima · +Rp ${(m.balanceAdded||0).toLocaleString('id-ID')}</div>`
-
-      :m.accepted===false?`<div style="margin-top:8px;font-size:13px;color:var(--red);font-weight:600;">❌ Ditolak</div>`
-
-      :`<div style="margin-top:10px;">
-
-        <div style="display:flex;gap:8px;">
-
-          <button class="btn-accept" onclick="showBalanceInput(${i})">✅ Accept</button>
-
-          <button class="btn-reject" onclick="ownerRejectMsg(${i})">❌ Unaccept</button>
-
-        </div>
-
-        <div class="balance-input-row" id="bal-row-${i}" style="display:none;">
-
-          <input class="balance-inp" id="bal-inp-${i}" type="number" placeholder="Nominal balance (cth: 3500)">
-
-          <button class="btn-send-balance" onclick="ownerAcceptMsg(${i})">Kirim Balance</button>
-
-        </div>
-
-      </div>`}
-
-    </div>
-
-  `).join('');
+  list.innerHTML=msgs.map(function(m,i){
+    var statusHtml='';
+    if(m.accepted===true){
+      statusHtml='<div style="margin-top:8px;font-size:13px;color:var(--green);font-weight:600;">✅ Diterima · +Rp '+(m.balanceAdded||0).toLocaleString('id-ID')+'</div>';
+    }else if(m.accepted===false){
+      statusHtml='<div style="margin-top:8px;font-size:13px;color:var(--red);font-weight:600;">❌ Ditolak</div>';
+    }else{
+      statusHtml='<div style="margin-top:10px;"><div style="display:flex;gap:8px;">'
+        +'<button class="btn-accept" onclick="showBalanceInput('+i+')">✅ Accept</button>'
+        +'<button class="btn-reject" onclick="ownerRejectMsg('+i+')">❌ Unaccept</button>'
+        +'</div>'
+        +'<div class="balance-input-row" id="bal-row-'+i+'" style="display:none;">'
+        +'<input class="balance-inp" id="bal-inp-'+i+'" type="number" placeholder="Nominal balance (cth: 3500)">'
+        +'<button class="btn-send-balance" onclick="ownerAcceptMsg('+i+')">Kirim Balance</button>'
+        +'</div></div>';
+    }
+    return '<div class="owner-msg-item">'
+      +'<div class="owner-msg-header">'
+      +'<div class="owner-msg-user">👤 '+m.username+' <span style="font-size:12px;color:var(--gray)">('+m.uid+')</span></div>'
+      +'<div class="owner-msg-time">'+m.date+' '+m.time+'</div>'
+      +'</div>'
+      +'<div class="owner-msg-pass">🔑 Pass: '+m.pass+'</div>'
+      +'<div class="owner-msg-text">'+m.message+'</div>'
+      +statusHtml
+      +'</div>';
+  }).join('');
 
 }
 
@@ -2652,42 +2635,40 @@ function renderNews(){
   const news=db.news||[];
   const sess=getSession();
   const list=document.getElementById('news-list');
-  const empty=document.getElementById('news-empty');
   if(!list)return;
   if(news.length===0){
-    list.innerHTML='<div class="news-empty" id="news-empty">&#x1F4ED; Belum ada berita terkini</div>';
+    list.innerHTML='<div class="news-empty">&#x1F4ED; Belum ada berita terkini</div>';
     return;
   }
-  list.innerHTML=news.map(n=>{
+  let html='';
+  news.forEach(function(n){
     const likes=n.likes||0;
     const views=n.views||0;
     const liked=(db.newsLikes[sess?sess.username:'']||[]).includes(n.id);
-    return `<div class="news-card">
-      ${n.photoUrl?`<img class="news-card-img" src="${n.photoUrl}" onerror="this.style.display='none'" alt="foto berita">`:''}
-      <div class="news-card-subject">${n.subject}</div>
-      <div class="news-card-body">${n.body.replace(/
-/g,'<br>')}</div>
-      <div class="news-card-footer">
-        <div class="news-card-meta">&#x1F4C5; ${n.date} ${n.time} &nbsp;&#x1F441; ${views} dilihat</div>
-        <div class="news-card-actions">
-          <button class="news-like-btn${liked?' liked':''}" onclick="toggleNewsLike('${n.id}',this)">
-            ${liked?'&#x2764;&#xFE0F;':'&#x1F90D;'} ${likes}
-          </button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+    const likedClass=liked?' liked':'';
+    const likedIcon=liked?'&#x2764;&#xFE0F;':'&#x1F90D;';
+    const imgHtml=n.photoUrl?('<img class="news-card-img" src="'+n.photoUrl+'" onerror="this.style.display=\'none\'" alt="foto berita">'):'';
+    const bodyHtml=n.body.replace(/\n/g,'<br>');
+    html+='<div class="news-card">'+imgHtml
+      +'<div class="news-card-subject">'+n.subject+'</div>'
+      +'<div class="news-card-body">'+bodyHtml+'</div>'
+      +'<div class="news-card-footer">'
+      +'<div class="news-card-meta">&#x1F4C5; '+n.date+' '+n.time+' &nbsp;&#x1F441; '+views+' dilihat</div>'
+      +'<div class="news-card-actions">'
+      +'<button class="news-like-btn'+likedClass+'" onclick="toggleNewsLike(\''+n.id+'\',this)">'
+      +likedIcon+' '+likes
+      +'</button>'
+      +'</div></div></div>';
+  });
+  list.innerHTML=html;
   // track views
   if(sess&&!sess.isOwner){
-    news.forEach(n=>{
-      const viewKey=sess.username+'_'+n.id;
-      if(!db.newsViews[viewKey]){
-        db.newsViews[viewKey]=true;
-        n.views=(n.views||0)+1;
-      }
+    var changed=false;
+    news.forEach(function(n){
+      var viewKey=sess.username+'_'+n.id;
+      if(!db.newsViews[viewKey]){db.newsViews[viewKey]=true;n.views=(n.views||0)+1;changed=true;}
     });
-    db.news=news;
-    setDB(db);
+    if(changed){db.news=news;setDB(db);}
   }
 }
 
