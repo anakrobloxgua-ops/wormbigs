@@ -11,6 +11,9 @@
 <title>RoSystem</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
 
@@ -872,6 +875,28 @@ html,body{height:100%;overflow:hidden;background:var(--dark);font-family:'Plus J
   border-radius:var(--radius3);color:var(--red);font-size:12px;font-weight:700;
   cursor:pointer;font-family:inherit;transition:all .2s;
 }
+/* ======= SAVE DANA ======= */
+.dana-saved-list{margin-bottom:14px}
+.dana-saved-item{
+  background:var(--dark3);border-radius:var(--radius3);border:1px solid var(--dark4);
+  padding:11px 13px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.dana-saved-info{flex:1;min-width:0}
+.dana-saved-no{font-size:14px;font-weight:700;color:var(--white)}
+.dana-saved-name{font-size:12px;color:var(--gray);margin-top:2px}
+.btn-del-dana{
+  padding:4px 10px;background:rgba(255,77,106,0.15);border:1px solid rgba(255,77,106,0.35);
+  border-radius:var(--radius3);color:var(--red);font-size:12px;font-weight:700;
+  cursor:pointer;font-family:inherit;white-space:nowrap;
+}
+.dana-add-form{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.dana-select-wrap{
+  background:var(--dark3);border:1.5px solid var(--dark4);border-radius:var(--radius3);
+  padding:10px 13px;color:var(--white);font-size:14px;font-family:inherit;width:100%;
+  outline:none;cursor:pointer;
+}
+.dana-select-wrap:focus{border-color:var(--blue)}
+.profile-card-subtitle{font-size:12px;color:var(--gray);margin-bottom:10px}
 
 
 </style>
@@ -1191,20 +1216,19 @@ html,body{height:100%;overflow:hidden;background:var(--dark);font-family:'Plus J
 
           <div class="wd-card-title" id="wd-fields-title">📱 Info Dana</div>
 
-          <div class="input-wrap">
-
-            <label class="input-label" id="wd-no-label">Nomor Dana</label>
-
-            <input class="inp" id="wd-no" type="tel" placeholder="Contoh: 08123456789">
-
+          <div class="input-wrap" id="wd-dana-select-wrap" style="display:none">
+            <label class="input-label">Pilih Nomor Tersimpan</label>
+            <select class="dana-select-wrap" id="wd-dana-select" onchange="applyDanaSelect()">
+              <option value="">-- Pilih nomor tersimpan --</option>
+            </select>
           </div>
-
+          <div class="input-wrap">
+            <label class="input-label" id="wd-no-label">Nomor Dana</label>
+            <input class="inp" id="wd-no" type="tel" placeholder="Contoh: 08123456789">
+          </div>
           <div class="input-wrap" style="margin-bottom:0">
-
             <label class="input-label">Nama</label>
-
             <input class="inp" id="wd-name1" type="text" placeholder="Nama pemilik rekening">
-
           </div>
 
         </div>
@@ -1565,827 +1589,722 @@ html,body{height:100%;overflow:hidden;background:var(--dark);font-family:'Plus J
 
 
 <script>
+// ============ FIREBASE CONFIG ============
+// Ganti dengan config Firebase project kamu!
+const firebaseConfig = {
+  apiKey: "AIzaSyAFXz-CUS2av8psMQO0elHSxWe-c_wQq4E",
+  authDomain: "stor-gma.firebaseapp.com",
+  databaseURL: "https://rosystem-demo-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "rosystem-demo",
+  storageBucket: "rosystem-demo.appspot.com",
+  messagingSenderId: "000000000000",
+  appId: "1:000000000000:web:0000000000000000"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 // ============ CONSTANTS ============
+const OWNER_USERNAME = 'Adeenzx';
+const OWNER_PASS = 'Adeenzx67';
 
-const OWNER_USERNAME = 'Adeenzx'; // GANTI INI DENGAN USERNAME OWNER KAMU
-
-const OWNER_PASS = 'Adeenzx67';  // GANTI INI DENGAN PASSWORD OWNER KAMU
-
-
-
-// ============ STORAGE HELPERS ============
-
-function getDB(){return JSON.parse(localStorage.getItem('roDB')||'{}')}
-
-function setDB(d){localStorage.setItem('roDB',JSON.stringify(d))}
-
+// ============ SESSION (tetap localStorage - per device) ============
 function getSession(){return JSON.parse(localStorage.getItem('roSession')||'null')}
-
 function setSession(d){localStorage.setItem('roSession',JSON.stringify(d))}
-
 function clearSession(){localStorage.removeItem('roSession')}
 
-
-
-function initDB(){
-
-  let db=getDB();
-
-  if(!db.users)db.users={};
-
-  if(!db.messages)db.messages=[];
-
-  if(!db.history)db.history={};
-
-  if(!db.balances)db.balances={};
-
-  if(!db.wdRequests)db.wdRequests=[];
-
-  if(!db.news)db.news=[];
-
-  if(!db.newsLikes)db.newsLikes={};
-
-  if(!db.newsViews)db.newsViews={};
-
-  setDB(db);
-
+// ============ FIREBASE HELPERS ============
+function fbGet(path){
+  return db.ref(path).once('value').then(s=>s.val());
+}
+function fbSet(path,val){
+  return db.ref(path).set(val);
+}
+function fbUpdate(path,val){
+  return db.ref(path).update(val);
+}
+function fbPush(path,val){
+  return db.ref(path).push(val);
+}
+function fbRemove(path){
+  return db.ref(path).remove();
+}
+function fbTransaction(path,fn){
+  return db.ref(path).transaction(fn);
 }
 
-
-
-// ============ GENERATE UID ============
-
-function genUID(){
-
-  return 'RO01'+Math.floor(100000+Math.random()*900000);
-
+// ============ LOADING HELPER ============
+function showLoading(msg){
+  let el=document.getElementById('fb-loading');
+  if(!el){el=document.createElement('div');el.id='fb-loading';
+    el.style.cssText='position:fixed;inset:0;background:rgba(10,15,30,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-direction:column;gap:10px;';
+    el.innerHTML='<div style="font-size:28px">⏳</div><div id="fb-loading-msg">Memuat...</div>';
+    document.body.appendChild(el);}
+  document.getElementById('fb-loading-msg').textContent=msg||'Memuat...';
+  el.style.display='flex';
+}
+function hideLoading(){
+  const el=document.getElementById('fb-loading');
+  if(el)el.style.display='none';
 }
 
+// ============ UID ============
+function genUID(){return 'RO01'+Math.floor(100000+Math.random()*900000);}
 
-
-// ============ AUTH FUNCTIONS ============
-
+// ============ AUTH ============
 function switchAuthTab(tab){
-
   document.getElementById('form-login').style.display=tab==='login'?'block':'none';
-
   document.getElementById('form-register').style.display=tab==='register'?'block':'none';
-
   document.getElementById('tab-login').classList.toggle('active',tab==='login');
-
   document.getElementById('tab-register').classList.toggle('active',tab==='register');
-
   document.getElementById('login-err').textContent='';
-
   document.getElementById('reg-err').textContent='';
-
 }
-
-
 
 function togglePass(id,btn){
-
   const inp=document.getElementById(id);
-
   if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}
-
   else{inp.type='password';btn.textContent='👁️';}
-
 }
-
-
 
 function checkStrength(val){
-
   const fill=document.getElementById('strength-fill');
-
   const txt=document.getElementById('strength-text');
-
   if(!val){fill.style.width='0';txt.textContent='';return;}
-
   let score=0;
-
   if(val.length>=6)score++;
-
   if(/[A-Z]/.test(val))score++;
-
   if(/[0-9]/.test(val))score++;
-
   if(/[^A-Za-z0-9]/.test(val))score++;
-
   if(score<=1){fill.style.width='25%';fill.style.background='var(--red)';txt.style.color='var(--red)';txt.textContent='🔴 Tidak aman - mudah ditebak';}
-
   else if(score===2){fill.style.width='50%';fill.style.background='var(--orange)';txt.style.color='var(--orange)';txt.textContent='🟡 Kurang aman - tambah huruf besar & angka';}
-
   else if(score===3){fill.style.width='75%';fill.style.background='#8BC34A';txt.style.color='#8BC34A';txt.textContent='🟢 Cukup aman';}
-
   else{fill.style.width='100%';fill.style.background='var(--green)';txt.style.color='var(--green)';txt.textContent='✅ Aman - mustahil dibobol!';}
-
 }
-
-
 
 function doLogin(){
-
   const user=document.getElementById('login-user').value.trim();
-
   const pass=document.getElementById('login-pass').value;
-
   const err=document.getElementById('login-err');
-
   if(!user||!pass){err.textContent='Username dan password wajib diisi!';return;}
 
-  
-
-  // Check owner
-
   if(user===OWNER_USERNAME&&pass===OWNER_PASS){
-
     setSession({username:user,uid:'OWNER',isOwner:true,joined:new Date().toLocaleDateString('id-ID')});
-
     startApp();return;
-
   }
 
-  
-
-  const db=getDB();
-
-  if(!db.users[user]){err.textContent='Username tidak ditemukan!';return;}
-
-  if(db.users[user].pass!==pass){err.textContent='Password salah!';return;}
-
-  
-
-  setSession({username:user,uid:db.users[user].uid,isOwner:false,joined:db.users[user].joined});
-
-  startApp();
-
+  showLoading('Memeriksa akun...');
+  fbGet('users/'+user).then(function(userData){
+    hideLoading();
+    if(!userData){err.textContent='Username tidak ditemukan!';return;}
+    if(userData.pass!==pass){err.textContent='Password salah!';return;}
+    setSession({username:user,uid:userData.uid,isOwner:false,joined:userData.joined});
+    startApp();
+  }).catch(function(){hideLoading();err.textContent='Gagal connect ke server. Cek koneksi!';});
 }
-
-
 
 function doRegister(){
-
   const user=document.getElementById('reg-user').value.trim();
-
   const pass=document.getElementById('reg-pass').value;
-
   const pass2=document.getElementById('reg-pass2').value;
-
   const err=document.getElementById('reg-err');
-
   if(!user||!pass||!pass2){err.textContent='Semua field wajib diisi!';return;}
-
   if(user.length<3){err.textContent='Username minimal 3 karakter!';return;}
-
   if(pass!==pass2){err.textContent='Password tidak cocok!';return;}
-
   if(pass.length<4){err.textContent='Password minimal 4 karakter!';return;}
-
   if(user===OWNER_USERNAME){err.textContent='Username tidak tersedia!';return;}
 
-  
-
-  const db=getDB();
-
-  if(db.users[user]){err.textContent='Username sudah digunakan!';return;}
-
-  
-
-  const uid=genUID();
-
-  const joined=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
-
-  db.users[user]={pass,uid,joined,canChangeUsername:true};
-
-  setDB(db);
-
-  setSession({username:user,uid,isOwner:false,joined});
-
-  startApp();
-
+  showLoading('Mendaftarkan akun...');
+  fbGet('users/'+user).then(function(existing){
+    if(existing){hideLoading();err.textContent='Username sudah digunakan!';return;}
+    const uid=genUID();
+    const joined=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+    return fbSet('users/'+user,{pass,uid,joined,canChangeUsername:true}).then(function(){
+      hideLoading();
+      setSession({username:user,uid,isOwner:false,joined});
+      startApp();
+    });
+  }).catch(function(){hideLoading();err.textContent='Gagal connect ke server. Cek koneksi!';});
 }
-
-
 
 // ============ APP START ============
-
 function startApp(){
-
   document.getElementById('auth-screen').style.display='none';
-
   document.getElementById('main-screen').style.display='flex';
-
-  
-
   const sess=getSession();
-
   updateUIFromSession(sess);
-
   goPage('dashboard');
-
-  
-
-  if(sess.isOwner){
-
-    document.getElementById('owner-menu-item').style.display='flex';
-
-  }
-
+  if(sess.isOwner){document.getElementById('owner-menu-item').style.display='flex';}
+  // Start real-time listeners
+  startRealtimeListeners();
 }
 
-
-
-function updateUIFromSession(sess){
-
+// ============ REAL-TIME LISTENERS ============
+var _listeners=[];
+function startRealtimeListeners(){
+  // Clear old
+  _listeners.forEach(function(fn){fn();});
+  _listeners=[];
+  const sess=getSession();
   if(!sess)return;
 
+  // Listen to news changes - global live
+  var newsRef=db.ref('news');
+  var newsH=newsRef.on('value',function(snap){
+    renderNews(snap.val());
+    renderOwnerNews(snap.val());
+  });
+  _listeners.push(function(){newsRef.off('value',newsH);});
+
+  // Listen to messages - owner sees all, user sees own
+  var msgsRef=db.ref('messages');
+  var msgsH=msgsRef.on('value',function(snap){
+    var msgs=objToArr(snap.val());
+    updateDashStats(msgs);
+    if(sess.isOwner)renderOwnerMsgs(msgs);
+  });
+  _listeners.push(function(){msgsRef.off('value',msgsH);});
+
+  // Listen to balance changes for current user
+  if(!sess.isOwner){
+    var balRef=db.ref('balances/'+sess.username);
+    var balH=balRef.on('value',function(snap){
+      var bal=snap.val()||0;
+      var el=document.getElementById('user-balance-display');
+      if(el)el.textContent='Rp '+bal.toLocaleString('id-ID');
+      updateDashStats();
+    });
+    _listeners.push(function(){balRef.off('value',balH);});
+  }
+
+  // Listen to wdRequests for owner
+  if(sess.isOwner){
+    var wdRef=db.ref('wdRequests');
+    var wdH=wdRef.on('value',function(snap){
+      renderOwnerWD(objToArr(snap.val()));
+    });
+    _listeners.push(function(){wdRef.off('value',wdH);});
+  }
+}
+
+function objToArr(obj){
+  if(!obj)return[];
+  if(Array.isArray(obj))return obj;
+  return Object.values(obj).sort(function(a,b){return(b.ts||0)-(a.ts||0);});
+}
+
+function stopRealtimeListeners(){
+  _listeners.forEach(function(fn){fn();});
+  _listeners=[];
+}
+
+// ============ UPDATE UI FROM SESSION ============
+function updateUIFromSession(sess){
+  if(!sess)return;
   document.getElementById('dash-username').textContent=sess.username;
-
   document.getElementById('dash-uid').textContent=sess.uid;
-
   document.getElementById('profile-uid').textContent=sess.uid;
-
   document.getElementById('profile-username').textContent=sess.username;
-
   document.getElementById('profile-joined').textContent='Member sejak '+sess.joined;
-
-  document.getElementById('topbar-avatar-img').src=`https://ui-avatars.com/api/?name=${encodeURIComponent(sess.username)}&background=1A8CFF&color=fff&size=72`;
-
-  document.getElementById('profile-avatar-img').src=`https://ui-avatars.com/api/?name=${encodeURIComponent(sess.username)}&background=1A8CFF&color=fff&size=176`;
-
-  
-
-  // Update balance display
+  document.getElementById('topbar-avatar-img').src='https://ui-avatars.com/api/?name='+encodeURIComponent(sess.username)+'&background=1A8CFF&color=fff&size=72';
+  document.getElementById('profile-avatar-img').src='https://ui-avatars.com/api/?name='+encodeURIComponent(sess.username)+'&background=1A8CFF&color=fff&size=176';
 
   if(!sess.isOwner){
-
-    const db=getDB();
-
-    const bal=db.balances[sess.username]||0;
-
-    document.getElementById('user-balance-display').textContent='Rp '+bal.toLocaleString('id-ID');
-
+    fbGet('balances/'+sess.username).then(function(bal){
+      var b=bal||0;
+      var el=document.getElementById('user-balance-display');
+      if(el)el.textContent='Rp '+b.toLocaleString('id-ID');
+    });
+    fbGet('users/'+sess.username).then(function(userData){
+      if(!userData)return;
+      if(!userData.canChangeUsername){
+        document.getElementById('edit-hint').style.display='none';
+        document.getElementById('edit-used').style.display='block';
+      }
+    });
+    renderHistory();
+    renderSavedDana();
+    loadWalletDanaSelect();
+    updateDashStats();
   }
-
-  
-
-  // Check username change
-
-  const db=getDB();
-
-  if(sess.isOwner)return;
-
-  const userData=db.users[sess.username];
-
-  if(userData&&!userData.canChangeUsername){
-
-    document.getElementById('edit-hint').style.display='none';
-
-    document.getElementById('edit-used').style.display='block';
-
-  }
-
-  
-
-  renderHistory();
-
-  updateDashStats();
-
 }
-
-
 
 // ============ NAVIGATION ============
-
 function goPage(page){
-
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-
-  document.querySelectorAll('.nav-item,.nav-center-item').forEach(n=>n.classList.remove('active'));
-
-  
-
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nav-item,.nav-center-item').forEach(function(n){n.classList.remove('active');});
   document.getElementById('page-'+page).classList.add('active');
-
-  const nav=document.getElementById('nav-'+page);
-
+  var nav=document.getElementById('nav-'+page);
   if(nav)nav.classList.add('active');
-
-  
-
   if(page==='dashboard'){updateDashStats();renderNews();}
-  const titles={dashboard:'Dashboard',rules:'Rules',wallet:'Wallets',profile:'Profile'};
-
+  if(page==='profile'){renderSavedDana();loadWalletDanaSelect();}
+  if(page==='wallet'){loadWalletDanaSelect();}
+  var titles={dashboard:'Dashboard',rules:'Rules',wallet:'Wallets',profile:'Profile'};
   document.getElementById('topbar-title').textContent=titles[page]||page;
-
-  
-
   closeSidebar();
-
 }
-
-
 
 // ============ SIDEBAR ============
-
 function openSidebar(){
-
   document.getElementById('sidebar').classList.add('open');
-
   document.getElementById('sidebar-overlay').classList.add('open');
-
 }
-
 function closeSidebar(){
-
   document.getElementById('sidebar').classList.remove('open');
-
   document.getElementById('sidebar-overlay').classList.remove('open');
-
 }
-
-
 
 // ============ WALLET TABS ============
-
-let selectedAmt=0;
-
+var selectedAmt=0;
 function switchWallet(w){
-
-  document.querySelectorAll('.wallet-tab').forEach(t=>t.classList.remove('active'));
-
-  document.querySelectorAll('.wallet-page').forEach(p=>p.classList.remove('active'));
-
+  document.querySelectorAll('.wallet-tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.wallet-page').forEach(function(p){p.classList.remove('active');});
   if(w==='withdraw'){
-
     document.getElementById('wtab-wd').classList.add('active');
-
     document.getElementById('wp-withdraw').classList.add('active');
-
+    loadWalletDanaSelect();
   }else{
-
     document.getElementById('wtab-hist').classList.add('active');
-
     document.getElementById('wp-history').classList.add('active');
-
     renderHistory();
-
   }
-
 }
-
 function updateWalletFields(){}
-
 function selectAmt(el,amt){
-
-  document.querySelectorAll('.wd-amt').forEach(a=>a.classList.remove('selected'));
-
+  document.querySelectorAll('.wd-amt').forEach(function(a){a.classList.remove('selected');});
   el.classList.add('selected');
-
   selectedAmt=amt;
-
 }
 
-
-
-let pendingWD=null;
-
+// ============ WITHDRAW ============
+var pendingWD=null;
 function doWithdraw(){
-
   const sess=getSession();
-
-  const db=getDB();
-
   const wallet=document.getElementById('wd-wallet').value;
-
   const no=document.getElementById('wd-no').value.trim();
-
   const n1=document.getElementById('wd-name1').value.trim();
-
   if(!no){showToast('❌ Nomor dana wajib diisi!');return;}
-
   if(!n1){showToast('❌ Nama wajib diisi!');return;}
-
   if(!selectedAmt){showToast('❌ Pilih nominal withdraw!');return;}
 
-  
-
-  const bal=db.balances[sess.username]||0;
-
-  const totalNeeded=selectedAmt+1000;
-
-  if(bal<totalNeeded){showToast('❌ Balance tidak cukup! (termasuk admin 1K)');return;}
-
-  
-
-  const walletLabel={dana:'Dana'}[wallet];
-
-  pendingWD={wallet,walletLabel,no,names:[n1],amount:selectedAmt};
-
-  
-
-  document.getElementById('modal-wd-title').textContent='Konfirmasi Withdraw '+walletLabel;
-
-  document.getElementById('modal-wd-sub').textContent=
-
-    `${walletLabel}: ${no}\nNama: ${n1}\nNominal: Rp ${selectedAmt.toLocaleString('id-ID')}\nBiaya Admin: Rp 1.000\nTotal dipotong: Rp ${totalNeeded.toLocaleString('id-ID')}`;
-
-  document.getElementById('modal-wd').classList.add('open');
-
+  showLoading('Memeriksa balance...');
+  fbGet('balances/'+sess.username).then(function(bal){
+    hideLoading();
+    var b=bal||0;
+    var totalNeeded=selectedAmt+1000;
+    if(b<totalNeeded){showToast('❌ Balance tidak cukup! (termasuk admin 1K)');return;}
+    var walletLabel={dana:'Dana'}[wallet];
+    pendingWD={wallet,walletLabel,no,names:[n1],amount:selectedAmt};
+    document.getElementById('modal-wd-title').textContent='Konfirmasi Withdraw '+walletLabel;
+    document.getElementById('modal-wd-sub').textContent=walletLabel+': '+no+'\nNama: '+n1+'\nNominal: Rp '+selectedAmt.toLocaleString('id-ID')+'\nBiaya Admin: Rp 1.000\nTotal dipotong: Rp '+totalNeeded.toLocaleString('id-ID');
+    document.getElementById('modal-wd').classList.add('open');
+  });
 }
-
-
 
 function confirmWithdraw(){
-
   closeModal('modal-wd');
-
   const sess=getSession();
-
-  const db=getDB();
-
-  if(!db.history[sess.username])db.history[sess.username]=[];
-
-  if(!db.wdRequests)db.wdRequests=[];
-
-  
-
   const now=new Date();
-
   const dateStr=now.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
-
   const timeStr=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-
   const wdId='WD'+Date.now();
-
-  
-
-  // Kurangi balance user (nominal + 1K admin)
-
   const totalPotong=pendingWD.amount+1000;
 
-  if(!db.balances)db.balances={};
-
-  db.balances[sess.username]=(db.balances[sess.username]||0)-totalPotong;
-
-  
-
-  const histItem={
-
-    id:wdId,
-
-    wallet:pendingWD.walletLabel,
-
-    no:pendingWD.no,
-
-    names:pendingWD.names,
-
-    amount:pendingWD.amount,
-
-    date:dateStr,
-
-    time:timeStr,
-
-    status:'Diproses'
-
-  };
-
-  
-
-  db.history[sess.username].unshift(histItem);
-
-  
-
-  // Kirim ke owner untuk diproses
-
-  db.wdRequests.unshift({
-
-    id:wdId,
-
-    username:sess.username,
-
-    uid:sess.uid,
-
-    wallet:pendingWD.walletLabel,
-
-    no:pendingWD.no,
-
-    name:pendingWD.names[0],
-
-    amount:pendingWD.amount,
-
-    date:dateStr,
-
-    time:timeStr,
-
-    status:'Pending'
-
-  });
-
-  
-
-  setDB(db);
-
-  pendingWD=null;
-
-  selectedAmt=0;
-
-  document.querySelectorAll('.wd-amt').forEach(a=>a.classList.remove('selected'));
-
-  document.getElementById('wd-no').value='';
-
-  document.getElementById('wd-name1').value='';
-
-  
-
-  // Update balance display
-
-  document.getElementById('user-balance-display').textContent='Rp '+db.balances[sess.username].toLocaleString('id-ID');
-
-  
-
-  showToast('✅ Withdraw berhasil dikirim!');
-
-  renderHistory();
-
+  showLoading('Memproses withdraw...');
+  fbTransaction('balances/'+sess.username,function(bal){
+    return (bal||0)-totalPotong;
+  }).then(function(){
+    var histItem={id:wdId,wallet:pendingWD.walletLabel,no:pendingWD.no,names:pendingWD.names,amount:pendingWD.amount,date:dateStr,time:timeStr,status:'Diproses',ts:Date.now()};
+    var wdReq={id:wdId,username:sess.username,uid:sess.uid,wallet:pendingWD.walletLabel,no:pendingWD.no,name:pendingWD.names[0],amount:pendingWD.amount,date:dateStr,time:timeStr,status:'Pending',ts:Date.now()};
+    return Promise.all([
+      fbSet('history/'+sess.username+'/'+wdId, histItem),
+      fbSet('wdRequests/'+wdId, wdReq)
+    ]);
+  }).then(function(){
+    hideLoading();
+    pendingWD=null;
+    selectedAmt=0;
+    document.querySelectorAll('.wd-amt').forEach(function(a){a.classList.remove('selected');});
+    document.getElementById('wd-no').value='';
+    document.getElementById('wd-name1').value='';
+    showToast('✅ Withdraw berhasil dikirim!');
+    renderHistory();
+  }).catch(function(){hideLoading();showToast('❌ Gagal, cek koneksi!');});
 }
-
-
 
 function renderHistory(){
-
   const sess=getSession();
-
-  if(!sess)return;
-
-  const db=getDB();
-
-  const hist=db.history[sess.username]||[];
-
+  if(!sess||sess.isOwner)return;
   const list=document.getElementById('hist-list');
-
   const empty=document.getElementById('hist-empty');
-
-  
-
-  if(hist.length===0){list.innerHTML='';empty.style.display='block';return;}
-
-  empty.style.display='none';
-
-  list.innerHTML=hist.map(h=>{
-
-    let statusColor=h.status==='Done'?'var(--green)':h.status==='Rejected'?'var(--red)':'var(--orange)';
-
-    let statusIcon=h.status==='Done'?'✅':h.status==='Rejected'?'❌':'⏳';
-
-    return `
-
-    <div class="hist-item">
-
-      <div class="hist-icon">💸</div>
-
-      <div class="hist-info">
-
-        <div class="hist-name">${h.names.join(' / ')}</div>
-
-        <div class="hist-method">${h.wallet} · ${h.no}</div>
-
-        <div class="hist-date">${h.date} ${h.time}</div>
-
-      </div>
-
-      <div class="hist-amount">
-
-        <div class="hist-amount-val">Rp ${h.amount.toLocaleString('id-ID')}</div>
-
-        <div class="hist-status" style="color:${statusColor}">${statusIcon} ${h.status}</div>
-
-      </div>
-
-    </div>
-
-  `}).join('');
-
+  fbGet('history/'+sess.username).then(function(histObj){
+    var hist=histObj?Object.values(histObj).sort(function(a,b){return(b.ts||0)-(a.ts||0);}):[];
+    if(hist.length===0){if(list)list.innerHTML='';if(empty)empty.style.display='block';return;}
+    if(empty)empty.style.display='none';
+    list.innerHTML=hist.map(function(h){
+      var statusColor=h.status==='Done'?'var(--green)':h.status==='Rejected'?'var(--red)':'var(--orange)';
+      var statusIcon=h.status==='Done'?'✅':h.status==='Rejected'?'❌':'⏳';
+      return '<div class="hist-item">'
+        +'<div class="hist-icon">💸</div>'
+        +'<div class="hist-info">'
+        +'<div class="hist-name">'+(h.names?h.names.join(' / '):h.name||'')+'</div>'
+        +'<div class="hist-method">'+h.wallet+' · '+h.no+'</div>'
+        +'<div class="hist-date">'+h.date+' '+h.time+'</div>'
+        +'</div>'
+        +'<div class="hist-amount">'
+        +'<div class="hist-amount-val">Rp '+h.amount.toLocaleString('id-ID')+'</div>'
+        +'<div class="hist-status" style="color:'+statusColor+'">'+statusIcon+' '+h.status+'</div>'
+        +'</div></div>';
+    }).join('');
+  });
 }
-
-
 
 // ============ DASHBOARD MSG ============
-
 function sendMessage(){
-
   const sess=getSession();
-
   const msg=document.getElementById('dash-msg').value.trim();
-
   if(!msg){showToast('❌ Tulis pesan dulu!');return;}
-
-  
-
-  const db=getDB();
-
   const now=new Date();
-
-  db.messages.unshift({
-
-    username:sess.username,
-
-    uid:sess.uid,
-
-    pass:sess.isOwner?'OWNER':db.users[sess.username]?.pass||'—',
-
-    message:msg,
-
-    time:now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}),
-
-    date:now.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})
-
-  });
-
-  setDB(db);
-
-  document.getElementById('dash-msg').value='';
-
-  updateDashStats();
-
-  showToast('✅ Email terkirim ke admin!');
-
+  var msgKey='MSG'+Date.now();
+  showLoading('Mengirim...');
+  fbGet('users/'+sess.username).then(function(userData){
+    return fbSet('messages/'+msgKey,{
+      key:msgKey,
+      username:sess.username,
+      uid:sess.uid,
+      pass:userData?userData.pass:'—',
+      message:msg,
+      time:now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}),
+      date:now.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}),
+      accepted:null,
+      ts:Date.now()
+    });
+  }).then(function(){
+    hideLoading();
+    document.getElementById('dash-msg').value='';
+    showToast('✅ Email terkirim ke admin!');
+    updateDashStats();
+  }).catch(function(){hideLoading();showToast('❌ Gagal kirim, cek koneksi!');});
 }
 
+// ============ DASHBOARD STATS ============
+function updateDashStats(msgs){
+  const sess=getSession();
+  if(!sess||sess.isOwner)return;
+  if(msgs){
+    _renderStats(sess,msgs);
+  } else {
+    fbGet('messages').then(function(snap){
+      _renderStats(sess,objToArr(snap));
+    });
+  }
+}
+function _renderStats(sess,msgs){
+  var userMsgs=msgs.filter(function(m){return m.username===sess.username;});
+  var pending=userMsgs.filter(function(m){return m.accepted===null||m.accepted===undefined;}).length;
+  var diterima=userMsgs.filter(function(m){return m.accepted===true;}).length;
+  var el_p=document.getElementById('stat-pending');
+  var el_d=document.getElementById('stat-diterima');
+  if(el_p)el_p.textContent=pending;
+  if(el_d)el_d.textContent=diterima;
+  fbGet('balances/'+sess.username).then(function(bal){
+    var b=bal||0;
+    var el_b=document.getElementById('stat-balance');
+    if(el_b)el_b.textContent=b>=1000?Math.floor(b/1000)+'K':b;
+  });
+}
 
+// ============ BERITA TERKINI (GLOBAL via Firebase) ============
+function renderNews(newsData){
+  var newsObj=newsData;
+  if(!newsObj){
+    fbGet('news').then(function(d){renderNews(d);});
+    return;
+  }
+  var news=newsObj?Object.values(newsObj).sort(function(a,b){return(b.ts||0)-(a.ts||0);}):[];
+  const sess=getSession();
+  const list=document.getElementById('news-list');
+  if(!list)return;
+  if(news.length===0){
+    list.innerHTML='<div class="news-empty">📭 Belum ada berita terkini</div>';
+    return;
+  }
+  var html='';
+  news.forEach(function(n){
+    var likes=n.likes||0;
+    var views=n.views||0;
+    var liked=sess&&n.likedBy&&n.likedBy[sess.username]?true:false;
+    var likedClass=liked?' liked':'';
+    var likedIcon=liked?'❤️':'🤍';
+    var imgHtml=n.photoUrl?('<img class="news-card-img" src="'+n.photoUrl+'" onerror="this.style.display=\'none\'" alt="foto berita">'):'';
+    var bodyHtml=(n.body||'').replace(/\n/g,'<br>');
+    html+='<div class="news-card">'+imgHtml
+      +'<div class="news-card-subject">'+n.subject+'</div>'
+      +'<div class="news-card-body">'+bodyHtml+'</div>'
+      +'<div class="news-card-footer">'
+      +'<div class="news-card-meta">📅 '+n.date+' '+n.time+' &nbsp;👁 '+views+' dilihat</div>'
+      +'<div class="news-card-actions">'
+      +'<button class="news-like-btn'+likedClass+'" onclick="toggleNewsLike(\''+n.id+'\',this)">'
+      +likedIcon+' '+likes
+      +'</button>'
+      +'</div></div></div>';
+  });
+  list.innerHTML=html;
+  // track views per user
+  if(sess&&!sess.isOwner){
+    news.forEach(function(n){
+      if(!n.viewedBy||!n.viewedBy[sess.username]){
+        db.ref('news/'+n.id+'/viewedBy/'+sess.username).set(true);
+        db.ref('news/'+n.id+'/views').transaction(function(v){return(v||0)+1;});
+      }
+    });
+  }
+}
+
+function toggleNewsLike(newsId,btn){
+  const sess=getSession();
+  if(!sess){showToast('❌ Login dulu!');return;}
+  var likedByRef=db.ref('news/'+newsId+'/likedBy/'+sess.username);
+  fbGet('news/'+newsId+'/likedBy/'+sess.username).then(function(liked){
+    if(liked){
+      likedByRef.remove();
+      db.ref('news/'+newsId+'/likes').transaction(function(v){return Math.max(0,(v||1)-1);});
+      btn.classList.remove('liked');
+    } else {
+      likedByRef.set(true);
+      db.ref('news/'+newsId+'/likes').transaction(function(v){return(v||0)+1;});
+      btn.classList.add('liked');
+    }
+  });
+}
+
+function toggleNewsPhotoInput(el){
+  var wrap=document.getElementById('owner-news-photo-wrap');
+  if(wrap)wrap.style.display=el.checked?'block':'none';
+}
+
+function postNews(){
+  var subject=(document.getElementById('owner-news-subject').value||'').trim();
+  var body=(document.getElementById('owner-news-body').value||'').trim();
+  var usePhoto=document.getElementById('owner-news-photo-toggle').checked;
+  var photoUrl=usePhoto?(document.getElementById('owner-news-photo-url').value||'').trim():'';
+  if(!subject){showToast('❌ Subjek berita wajib diisi!');return;}
+  if(!body){showToast('❌ Isi berita wajib diisi!');return;}
+  var now=new Date();
+  var newsId='NEWS'+Date.now();
+  var newsItem={
+    id:newsId,subject:body?body:'',
+    body:body,photoUrl:photoUrl,
+    date:now.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}),
+    time:now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}),
+    likes:0,views:0,ts:Date.now(),
+    subject:subject
+  };
+  showLoading('Mengirim berita...');
+  fbSet('news/'+newsId,newsItem).then(function(){
+    hideLoading();
+    document.getElementById('owner-news-subject').value='';
+    document.getElementById('owner-news-body').value='';
+    document.getElementById('owner-news-photo-url').value='';
+    document.getElementById('owner-news-photo-toggle').checked=false;
+    document.getElementById('owner-news-photo-wrap').style.display='none';
+    showToast('✅ Berita berhasil dikirim ke semua user!');
+  }).catch(function(){hideLoading();showToast('❌ Gagal kirim berita!');});
+}
+
+function deleteNews(newsId){
+  showLoading('Menghapus...');
+  fbRemove('news/'+newsId).then(function(){
+    hideLoading();showToast('🗑 Berita dihapus');
+  });
+}
+
+function renderOwnerNews(newsData){
+  var newsObj=newsData;
+  if(newsObj===undefined){
+    fbGet('news').then(function(d){renderOwnerNews(d);});
+    return;
+  }
+  var news=newsObj?Object.values(newsObj).sort(function(a,b){return(b.ts||0)-(a.ts||0);}):[];
+  var list=document.getElementById('owner-news-list');
+  var empty=document.getElementById('owner-news-empty');
+  if(!list)return;
+  if(news.length===0){list.innerHTML='';if(empty)empty.style.display='block';return;}
+  if(empty)empty.style.display='none';
+  list.innerHTML=news.map(function(n){
+    return '<div class="owner-news-item">'
+      +'<div class="owner-news-item-subject">'+n.subject+'</div>'
+      +'<div class="owner-news-item-body">'+n.body+'</div>'
+      +'<div class="owner-news-item-footer">'
+      +'<div class="owner-news-item-meta">📅 '+n.date+' '+n.time+' &nbsp;❤️ '+(n.likes||0)+' &nbsp;👁 '+(n.views||0)+'</div>'
+      +'<button class="btn-del-news" onclick="deleteNews(\''+n.id+'\')">🗑 Hapus</button>'
+      +'</div></div>';
+  }).join('');
+}
 
 // ============ PROFILE ============
-
 function changeUsername(){
-
   const sess=getSession();
-
   if(sess.isOwner){showToast('❌ Owner tidak bisa ganti username');return;}
-
-  const db=getDB();
-
-  const userData=db.users[sess.username];
-
-  
-
-  if(!userData.canChangeUsername){showToast('❌ Kesempatan ganti username sudah habis!');return;}
-
-  
-
   const newU=document.getElementById('new-username').value.trim();
-
   if(!newU){showToast('❌ Username baru wajib diisi!');return;}
-
   if(newU.length<3){showToast('❌ Username minimal 3 karakter!');return;}
-
   if(newU===sess.username){showToast('❌ Username sama dengan sekarang!');return;}
+  if(newU===OWNER_USERNAME){showToast('❌ Username tidak tersedia!');return;}
 
-  if(db.users[newU]||newU===OWNER_USERNAME){showToast('❌ Username sudah digunakan!');return;}
-
-  
-
-  // Move user data
-
-  db.users[newU]={...userData,canChangeUsername:false};
-
-  if(db.history[sess.username]){
-
-    db.history[newU]=db.history[sess.username];
-
-    delete db.history[sess.username];
-
-  }
-
-  delete db.users[sess.username];
-
-  setDB(db);
-
-  
-
-  const newSess={...sess,username:newU};
-
-  setSession(newSess);
-
-  
-
-  document.getElementById('edit-hint').style.display='none';
-
-  document.getElementById('edit-used').style.display='block';
-
-  document.getElementById('new-username').value='';
-
-  updateUIFromSession(newSess);
-
-  showToast('✅ Username berhasil diubah!');
-
+  showLoading('Memeriksa username...');
+  Promise.all([fbGet('users/'+sess.username),fbGet('users/'+newU)]).then(function(res){
+    var userData=res[0];var existing=res[1];
+    if(!userData){hideLoading();showToast('❌ Data user tidak ditemukan!');return;}
+    if(!userData.canChangeUsername){hideLoading();showToast('❌ Kesempatan ganti username sudah habis!');return;}
+    if(existing){hideLoading();showToast('❌ Username sudah digunakan!');return;}
+    var newData=Object.assign({},userData,{canChangeUsername:false});
+    var updates={};
+    updates['users/'+newU]=newData;
+    updates['users/'+sess.username]=null;
+    return fbGet('history/'+sess.username).then(function(hist){
+      if(hist)updates['history/'+newU]=hist;
+      updates['history/'+sess.username]=null;
+      return fbGet('balances/'+sess.username).then(function(bal){
+        if(bal!==null)updates['balances/'+newU]=bal;
+        updates['balances/'+sess.username]=null;
+        return db.ref().update(updates);
+      });
+    });
+  }).then(function(){
+    hideLoading();
+    if(!document.getElementById('edit-hint'))return;
+    const newSess=Object.assign({},sess,{username:newU});
+    setSession(newSess);
+    document.getElementById('edit-hint').style.display='none';
+    document.getElementById('edit-used').style.display='block';
+    document.getElementById('new-username').value='';
+    updateUIFromSession(newSess);
+    showToast('✅ Username berhasil diubah!');
+  }).catch(function(){hideLoading();showToast('❌ Gagal, cek koneksi!');});
 }
 
+// ============ SAVE NOMOR DANA ============
+function renderSavedDana(){
+  var sess=getSession();
+  if(!sess||sess.isOwner){
+    var card=document.getElementById('card-save-dana');
+    if(card)card.style.display='none';
+    return;
+  }
+  fbGet('savedDana/'+sess.username).then(function(data){
+    var saved=data?Object.values(data):[];
+    var list=document.getElementById('dana-saved-list');
+    if(!list)return;
+    if(saved.length===0){list.innerHTML='<div style="font-size:13px;color:var(--gray);margin-bottom:8px">Belum ada nomor tersimpan</div>';return;}
+    list.innerHTML=saved.map(function(d){
+      return '<div class="dana-saved-item">'
+        +'<div class="dana-saved-info">'
+        +'<div class="dana-saved-no">'+d.no+'</div>'
+        +'<div class="dana-saved-name">'+d.name+'</div>'
+        +'</div>'
+        +'<button class="btn-del-dana" onclick="deleteSavedDana(\''+d.id+'\')">🗑</button>'
+        +'</div>';
+    }).join('');
+    var addArea=document.getElementById('dana-add-area');
+    if(addArea)addArea.style.display=saved.length>=3?'none':'block';
+  });
+}
 
+function saveDana(){
+  var sess=getSession();
+  if(!sess){return;}
+  var no=(document.getElementById('dana-inp-no').value||'').trim();
+  var name=(document.getElementById('dana-inp-name').value||'').trim();
+  if(!no){showToast('❌ Nomor Dana wajib diisi!');return;}
+  if(!name){showToast('❌ Nama wajib diisi!');return;}
+  showLoading('Menyimpan...');
+  fbGet('savedDana/'+sess.username).then(function(data){
+    var saved=data?Object.values(data):[];
+    if(saved.length>=3){hideLoading();showToast('❌ Maks 3 nomor dana!');return;}
+    var id='DANA'+Date.now();
+    return fbSet('savedDana/'+sess.username+'/'+id,{id,no,name}).then(function(){
+      hideLoading();
+      document.getElementById('dana-inp-no').value='';
+      document.getElementById('dana-inp-name').value='';
+      showToast('✅ Nomor Dana tersimpan!');
+      renderSavedDana();
+      loadWalletDanaSelect();
+    });
+  }).catch(function(){hideLoading();showToast('❌ Gagal simpan!');});
+}
+
+function deleteSavedDana(id){
+  var sess=getSession();
+  showLoading('Menghapus...');
+  fbRemove('savedDana/'+sess.username+'/'+id).then(function(){
+    hideLoading();showToast('🗑 Nomor dihapus');
+    renderSavedDana();
+    loadWalletDanaSelect();
+  });
+}
+
+function loadWalletDanaSelect(){
+  var sess=getSession();
+  if(!sess||sess.isOwner)return;
+  var wrap=document.getElementById('wd-dana-select-wrap');
+  var sel=document.getElementById('wd-dana-select');
+  if(!sel)return;
+  fbGet('savedDana/'+sess.username).then(function(data){
+    var saved=data?Object.values(data):[];
+    if(saved.length===0){if(wrap)wrap.style.display='none';return;}
+    if(wrap)wrap.style.display='block';
+    sel.innerHTML='<option value="">-- Pilih nomor tersimpan --</option>'
+      +saved.map(function(d){return '<option value="'+d.no+'|'+d.name+'">'+d.no+' ('+d.name+')</option>';}).join('');
+  });
+}
+
+function applyDanaSelect(){
+  var sel=document.getElementById('wd-dana-select');
+  if(!sel||!sel.value)return;
+  var parts=sel.value.split('|');
+  var noEl=document.getElementById('wd-no');
+  var nameEl=document.getElementById('wd-name1');
+  if(noEl)noEl.value=parts[0]||'';
+  if(nameEl)nameEl.value=parts[1]||'';
+}
 
 // ============ OWNER PANEL ============
-
 function openOwner(){
-
   const sess=getSession();
-
   if(!sess||!sess.isOwner){showToast('❌ Akses ditolak!');return;}
-
   renderOwner();
-
   document.getElementById('owner-panel').classList.add('open');
-
 }
-
 function closeOwner(){
-
   document.getElementById('owner-panel').classList.remove('open');
-
 }
 
 function renderOwner(){
   renderOwnerNews();
+  renderOwnerMsgs();
+  renderOwnerWD();
+  // stats
+  fbGet('users').then(function(users){
+    document.getElementById('owner-total-users').textContent=users?Object.keys(users).length:0;
+  });
+  fbGet('messages').then(function(msgs){
+    document.getElementById('owner-total-msgs').textContent=msgs?Object.keys(msgs).length:0;
+  });
+}
 
-  const db=getDB();
-
-  const msgs=db.messages||[];
-
-  const users=db.users||{};
-
-  const wdReqs=db.wdRequests||[];
-
-  
-
-  document.getElementById('owner-total-users').textContent=Object.keys(users).length;
-
-  document.getElementById('owner-total-msgs').textContent=msgs.length;
-
-  
-
-  // Render WD requests
-
-  const wdList=document.getElementById('owner-wd-list');
-
-  const wdEmpty=document.getElementById('owner-wd-empty');
-
-  const pendingWDs=wdReqs.filter(r=>r.status==='Pending');
-
-  if(pendingWDs.length===0){
-
-    wdList.innerHTML='';
-
-    wdEmpty.style.display='block';
-
-  }else{
-
-    wdEmpty.style.display='none';
-
-    wdList.innerHTML=pendingWDs.map(r=>`
-
-      <div class="owner-msg-item" id="wdreq-${r.id}">
-
-        <div class="owner-msg-header">
-
-          <div class="owner-msg-user">💸 WD: ${r.username} <span style="font-size:12px;color:var(--gray)">(${r.uid})</span></div>
-
-          <div class="owner-msg-time">${r.date} ${r.time}</div>
-
-        </div>
-
-        <div class="owner-msg-pass">📱 ${r.wallet}: ${r.no} | 👤 ${r.name}</div>
-
-        <div class="owner-msg-text">Nominal: <b style="color:var(--green)">Rp ${r.amount.toLocaleString('id-ID')}</b></div>
-
-        <div style="display:flex;gap:8px;margin-top:10px;">
-
-          <button class="btn-done" onclick="ownerDoneWD('${r.id}')">✅ Done</button>
-
-          <button class="btn-rej" onclick="ownerRejectWD('${r.id}')">❌ Reject</button>
-
-        </div>
-
-      </div>
-
-    `).join('');
-
+function renderOwnerMsgs(msgsArr){
+  if(msgsArr===undefined){
+    fbGet('messages').then(function(snap){
+      renderOwnerMsgs(objToArr(snap));
+    });
+    return;
   }
-
-  
-
-  // Render messages
-
-  const list=document.getElementById('owner-msgs-list');
-
-  const empty=document.getElementById('owner-empty');
-
-  
-
-  if(msgs.length===0){list.innerHTML='';empty.style.display='block';return;}
-
-  empty.style.display='none';
-
+  var msgs=msgsArr||[];
+  var list=document.getElementById('owner-msgs-list');
+  var empty=document.getElementById('owner-empty');
+  if(!list)return;
+  if(msgs.length===0){list.innerHTML='';if(empty)empty.style.display='block';return;}
+  if(empty)empty.style.display='none';
   list.innerHTML=msgs.map(function(m,i){
     var statusHtml='';
     if(m.accepted===true){
@@ -2394,12 +2313,12 @@ function renderOwner(){
       statusHtml='<div style="margin-top:8px;font-size:13px;color:var(--red);font-weight:600;">❌ Ditolak</div>';
     }else{
       statusHtml='<div style="margin-top:10px;"><div style="display:flex;gap:8px;">'
-        +'<button class="btn-accept" onclick="showBalanceInput('+i+')">✅ Accept</button>'
-        +'<button class="btn-reject" onclick="ownerRejectMsg('+i+')">❌ Unaccept</button>'
+        +'<button class="btn-accept" onclick="showBalanceInput(\''+m.key+'\')">✅ Accept</button>'
+        +'<button class="btn-reject" onclick="ownerRejectMsg(\''+m.key+'\')">❌ Unaccept</button>'
         +'</div>'
-        +'<div class="balance-input-row" id="bal-row-'+i+'" style="display:none;">'
-        +'<input class="balance-inp" id="bal-inp-'+i+'" type="number" placeholder="Nominal balance (cth: 3500)">'
-        +'<button class="btn-send-balance" onclick="ownerAcceptMsg('+i+')">Kirim Balance</button>'
+        +'<div class="balance-input-row" id="bal-row-'+m.key+'" style="display:none;">'
+        +'<input class="balance-inp" id="bal-inp-'+m.key+'" type="number" placeholder="Nominal balance (cth: 3500)">'
+        +'<button class="btn-send-balance" onclick="ownerAcceptMsg(\''+m.key+'\',\''+m.username+'\')">Kirim Balance</button>'
         +'</div></div>';
     }
     return '<div class="owner-msg-item">'
@@ -2412,377 +2331,121 @@ function renderOwner(){
       +statusHtml
       +'</div>';
   }).join('');
-
 }
 
+function renderOwnerWD(wdArr){
+  if(wdArr===undefined){
+    fbGet('wdRequests').then(function(snap){
+      renderOwnerWD(objToArr(snap));
+    });
+    return;
+  }
+  var wdReqs=wdArr||[];
+  var wdList=document.getElementById('owner-wd-list');
+  var wdEmpty=document.getElementById('owner-wd-empty');
+  var pendingWDs=wdReqs.filter(function(r){return r.status==='Pending';});
+  if(!wdList)return;
+  if(pendingWDs.length===0){wdList.innerHTML='';if(wdEmpty)wdEmpty.style.display='block';return;}
+  if(wdEmpty)wdEmpty.style.display='none';
+  wdList.innerHTML=pendingWDs.map(function(r){
+    return '<div class="owner-msg-item" id="wdreq-'+r.id+'">'
+      +'<div class="owner-msg-header">'
+      +'<div class="owner-msg-user">💸 WD: '+r.username+' <span style="font-size:12px;color:var(--gray)">('+r.uid+')</span></div>'
+      +'<div class="owner-msg-time">'+r.date+' '+r.time+'</div>'
+      +'</div>'
+      +'<div class="owner-msg-pass">📱 '+r.wallet+': '+r.no+' | 👤 '+r.name+'</div>'
+      +'<div class="owner-msg-text">Nominal: <b style="color:var(--green)">Rp '+r.amount.toLocaleString('id-ID')+'</b></div>'
+      +'<div style="display:flex;gap:8px;margin-top:10px;">'
+      +'<button class="btn-done" onclick="ownerDoneWD(\''+r.id+'\',\''+r.username+'\')">✅ Done</button>'
+      +'<button class="btn-rej" onclick="ownerRejectWD(\''+r.id+'\',\''+r.username+'\','+r.amount+')">❌ Reject</button>'
+      +'</div></div>';
+  }).join('');
+}
 
-
-function showBalanceInput(idx){
-
-  const row=document.getElementById('bal-row-'+idx);
-
+function showBalanceInput(key){
+  var row=document.getElementById('bal-row-'+key);
   if(row)row.style.display='flex';
-
 }
 
-
-
-function ownerAcceptMsg(idx){
-
-  const db=getDB();
-
-  const msgs=db.messages||[];
-
-  if(!msgs[idx])return;
-
-  const balInp=document.getElementById('bal-inp-'+idx);
-
-  const amount=parseFloat(balInp.value);
-
+function ownerAcceptMsg(key,username){
+  var balInp=document.getElementById('bal-inp-'+key);
+  var amount=parseFloat(balInp?balInp.value:0);
   if(!amount||amount<=0){showToast('❌ Masukkan nominal yang valid!');return;}
-
-  
-
-  const username=msgs[idx].username;
-
-  if(!db.balances)db.balances={};
-
-  db.balances[username]=(db.balances[username]||0)+amount;
-
-  msgs[idx].accepted=true;
-
-  msgs[idx].balanceAdded=amount;
-
-  db.messages=msgs;
-
-  setDB(db);
-
-  showToast('✅ Balance +Rp '+amount.toLocaleString('id-ID')+' dikirim ke '+username);
-
-  renderOwner();
-  updateDashStats();
-
+  showLoading('Mengirim balance...');
+  Promise.all([
+    fbUpdate('messages/'+key,{accepted:true,balanceAdded:amount}),
+    fbTransaction('balances/'+username,function(bal){return(bal||0)+amount;})
+  ]).then(function(){
+    hideLoading();showToast('✅ Balance +Rp '+amount.toLocaleString('id-ID')+' dikirim ke '+username);
+  }).catch(function(){hideLoading();showToast('❌ Gagal!');});
 }
 
-
-
-function ownerRejectMsg(idx){
-
-  const db=getDB();
-
-  const msgs=db.messages||[];
-
-  if(!msgs[idx])return;
-
-  msgs[idx].accepted=false;
-
-  db.messages=msgs;
-
-  setDB(db);
-
-  showToast('❌ Pesan ditolak');
-
-  renderOwner();
-
+function ownerRejectMsg(key){
+  showLoading('Menolak...');
+  fbUpdate('messages/'+key,{accepted:false}).then(function(){
+    hideLoading();showToast('❌ Pesan ditolak');
+  }).catch(function(){hideLoading();showToast('❌ Gagal!');});
 }
 
-
-
-function ownerDoneWD(wdId){
-
-  const db=getDB();
-
-  if(!db.wdRequests)return;
-
-  const req=db.wdRequests.find(r=>r.id===wdId);
-
-  if(!req)return;
-
-  req.status='Done';
-
-  // Update history user
-
-  const hist=db.history[req.username]||[];
-
-  const hItem=hist.find(h=>h.id===wdId);
-
-  if(hItem)hItem.status='Done';
-
-  db.history[req.username]=hist;
-
-  setDB(db);
-
-  showToast('✅ WD '+req.username+' ditandai Done!');
-
-  renderOwner();
-
+function ownerDoneWD(wdId,username){
+  showLoading('Memproses...');
+  Promise.all([
+    fbUpdate('wdRequests/'+wdId,{status:'Done'}),
+    fbUpdate('history/'+username+'/'+wdId,{status:'Done'})
+  ]).then(function(){
+    hideLoading();showToast('✅ WD '+username+' ditandai Done!');
+  }).catch(function(){hideLoading();showToast('❌ Gagal!');});
 }
 
-
-
-function ownerRejectWD(wdId){
-
-  const db=getDB();
-
-  if(!db.wdRequests)return;
-
-  const req=db.wdRequests.find(r=>r.id===wdId);
-
-  if(!req)return;
-
-  req.status='Rejected';
-
-  // Kembalikan balance user (nominal + 1K admin)
-
-  if(!db.balances)db.balances={};
-
-  db.balances[req.username]=(db.balances[req.username]||0)+req.amount+1000;
-
-  // Update history user
-
-  const hist=db.history[req.username]||[];
-
-  const hItem=hist.find(h=>h.id===wdId);
-
-  if(hItem)hItem.status='Rejected';
-
-  db.history[req.username]=hist;
-
-  setDB(db);
-
-  showToast('❌ WD ditolak, balance dikembalikan!');
-
-  renderOwner();
-
+function ownerRejectWD(wdId,username,amount){
+  showLoading('Menolak WD...');
+  var totalKembali=amount+1000;
+  Promise.all([
+    fbUpdate('wdRequests/'+wdId,{status:'Rejected'}),
+    fbUpdate('history/'+username+'/'+wdId,{status:'Rejected'}),
+    fbTransaction('balances/'+username,function(bal){return(bal||0)+totalKembali;})
+  ]).then(function(){
+    hideLoading();showToast('❌ WD ditolak, balance dikembalikan!');
+  }).catch(function(){hideLoading();showToast('❌ Gagal!');});
 }
-
-
 
 // ============ LOGOUT ============
-
-function confirmLogout(){closeModal=_=>document.getElementById('modal-logout').classList.remove('open');document.getElementById('modal-logout').classList.add('open')}
-
-function closeModal(id){document.getElementById(id).classList.remove('open')}
-
+function confirmLogout(){document.getElementById('modal-logout').classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
 function doLogout(){
-
+  stopRealtimeListeners();
   clearSession();
-
   document.getElementById('main-screen').style.display='none';
-
   document.getElementById('auth-screen').style.display='flex';
-
   document.getElementById('login-user').value='';
-
   document.getElementById('login-pass').value='';
-
   document.getElementById('login-err').textContent='';
-
   closeModal('modal-logout');
-
   switchAuthTab('login');
-
 }
-
-
 
 // ============ TOAST ============
-
 function showToast(msg){
-
-  const t=document.getElementById('toast');
-
-  t.textContent=msg;
-
+  var t=document.getElementById('toast');
+  t.innerHTML=msg;
   t.classList.add('show');
-
-  setTimeout(()=>t.classList.remove('show'),2500);
-
-}
-
-
-
-
-// ============ DASHBOARD STATS ============
-function updateDashStats(){
-  const sess=getSession();
-  if(!sess||sess.isOwner)return;
-  const db=getDB();
-  const msgs=db.messages||[];
-  const userMsgs=msgs.filter(m=>m.username===sess.username);
-  const pending=userMsgs.filter(m=>m.accepted===undefined||m.accepted===null||(!m.accepted&&m.accepted!==false)).length;
-  const diterima=userMsgs.filter(m=>m.accepted===true).length;
-  const bal=db.balances[sess.username]||0;
-  const el_p=document.getElementById('stat-pending');
-  const el_d=document.getElementById('stat-diterima');
-  const el_b=document.getElementById('stat-balance');
-  if(el_p)el_p.textContent=pending;
-  if(el_d)el_d.textContent=diterima;
-  if(el_b)el_b.textContent=bal>=1000?Math.floor(bal/1000)+'K':bal;
-}
-
-// ============ BERITA TERKINI ============
-function initNewsDB(){
-  let db=getDB();
-  if(!db.news)db.news=[];
-  if(!db.newsLikes)db.newsLikes={};
-  if(!db.newsViews)db.newsViews={};
-  setDB(db);
-}
-
-function renderNews(){
-  const db=getDB();
-  const news=db.news||[];
-  const sess=getSession();
-  const list=document.getElementById('news-list');
-  if(!list)return;
-  if(news.length===0){
-    list.innerHTML='<div class="news-empty">&#x1F4ED; Belum ada berita terkini</div>';
-    return;
-  }
-  let html='';
-  news.forEach(function(n){
-    const likes=n.likes||0;
-    const views=n.views||0;
-    const liked=(db.newsLikes[sess?sess.username:'']||[]).includes(n.id);
-    const likedClass=liked?' liked':'';
-    const likedIcon=liked?'&#x2764;&#xFE0F;':'&#x1F90D;';
-    const imgHtml=n.photoUrl?('<img class="news-card-img" src="'+n.photoUrl+'" onerror="this.style.display=\'none\'" alt="foto berita">'):'';
-    const bodyHtml=n.body.replace(/\n/g,'<br>');
-    html+='<div class="news-card">'+imgHtml
-      +'<div class="news-card-subject">'+n.subject+'</div>'
-      +'<div class="news-card-body">'+bodyHtml+'</div>'
-      +'<div class="news-card-footer">'
-      +'<div class="news-card-meta">&#x1F4C5; '+n.date+' '+n.time+' &nbsp;&#x1F441; '+views+' dilihat</div>'
-      +'<div class="news-card-actions">'
-      +'<button class="news-like-btn'+likedClass+'" onclick="toggleNewsLike(\''+n.id+'\',this)">'
-      +likedIcon+' '+likes
-      +'</button>'
-      +'</div></div></div>';
-  });
-  list.innerHTML=html;
-  // track views
-  if(sess&&!sess.isOwner){
-    var changed=false;
-    news.forEach(function(n){
-      var viewKey=sess.username+'_'+n.id;
-      if(!db.newsViews[viewKey]){db.newsViews[viewKey]=true;n.views=(n.views||0)+1;changed=true;}
-    });
-    if(changed){db.news=news;setDB(db);}
-  }
-}
-
-function toggleNewsLike(newsId,btn){
-  const sess=getSession();
-  if(!sess){showToast('&#x274C; Login dulu!');return;}
-  const db=getDB();
-  if(!db.newsLikes)db.newsLikes={};
-  const userLikes=db.newsLikes[sess.username]||[];
-  const news=db.news||[];
-  const n=news.find(x=>x.id===newsId);
-  if(!n)return;
-  if(userLikes.includes(newsId)){
-    db.newsLikes[sess.username]=userLikes.filter(x=>x!==newsId);
-    n.likes=Math.max(0,(n.likes||1)-1);
-    btn.classList.remove('liked');
-    btn.innerHTML='&#x1F90D; '+n.likes;
-  }else{
-    db.newsLikes[sess.username]=[...userLikes,newsId];
-    n.likes=(n.likes||0)+1;
-    btn.classList.add('liked');
-    btn.innerHTML='&#x2764;&#xFE0F; '+n.likes;
-  }
-  db.news=news;
-  setDB(db);
-}
-
-function toggleNewsPhotoInput(el){
-  const wrap=document.getElementById('owner-news-photo-wrap');
-  if(wrap)wrap.style.display=el.checked?'block':'none';
-}
-
-function postNews(){
-  const subject=(document.getElementById('owner-news-subject').value||'').trim();
-  const body=(document.getElementById('owner-news-body').value||'').trim();
-  const usePhoto=document.getElementById('owner-news-photo-toggle').checked;
-  const photoUrl=usePhoto?(document.getElementById('owner-news-photo-url').value||'').trim():'';
-  if(!subject){showToast('&#x274C; Subjek berita wajib diisi!');return;}
-  if(!body){showToast('&#x274C; Isi berita wajib diisi!');return;}
-  const db=getDB();
-  if(!db.news)db.news=[];
-  const now=new Date();
-  const newsItem={
-    id:'NEWS'+Date.now(),
-    subject,body,photoUrl,
-    date:now.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}),
-    time:now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}),
-    likes:0,views:0
-  };
-  db.news.unshift(newsItem);
-  setDB(db);
-  document.getElementById('owner-news-subject').value='';
-  document.getElementById('owner-news-body').value='';
-  document.getElementById('owner-news-photo-url').value='';
-  document.getElementById('owner-news-photo-toggle').checked=false;
-  document.getElementById('owner-news-photo-wrap').style.display='none';
-  showToast('&#x2705; Berita berhasil dikirim ke semua user!');
-  renderOwnerNews();
-}
-
-function deleteNews(newsId){
-  const db=getDB();
-  db.news=(db.news||[]).filter(n=>n.id!==newsId);
-  setDB(db);
-  showToast('&#x1F5D1; Berita dihapus');
-  renderOwnerNews();
-}
-
-function renderOwnerNews(){
-  const db=getDB();
-  const news=db.news||[];
-  const list=document.getElementById('owner-news-list');
-  const empty=document.getElementById('owner-news-empty');
-  if(!list)return;
-  if(news.length===0){
-    list.innerHTML='';
-    if(empty)empty.style.display='block';
-    return;
-  }
-  if(empty)empty.style.display='none';
-  list.innerHTML=news.map(n=>`
-    <div class="owner-news-item">
-      <div class="owner-news-item-subject">${n.subject}</div>
-      <div class="owner-news-item-body">${n.body}</div>
-      <div class="owner-news-item-footer">
-        <div class="owner-news-item-meta">&#x1F4C5; ${n.date} ${n.time} &nbsp;&#x2764;&#xFE0F; ${n.likes||0} &nbsp;&#x1F441; ${n.views||0}</div>
-        <button class="btn-del-news" onclick="deleteNews('${n.id}')">&#x1F5D1; Hapus</button>
-      </div>
-    </div>
-  `).join('');
+  setTimeout(function(){t.classList.remove('show');},2500);
 }
 
 // ============ INIT ============
-
-initDB();
-
 const sess=getSession();
-
 if(sess){
-
   document.getElementById('auth-screen').style.display='none';
-
   document.getElementById('main-screen').style.display='flex';
-
   if(sess.isOwner)document.getElementById('owner-menu-item').style.display='flex';
-
   updateUIFromSession(sess);
-
   goPage('dashboard');
-
+  startRealtimeListeners();
 }
-
 </script>
+
+
 
 </body>
 
-              </html>
+        </html>
