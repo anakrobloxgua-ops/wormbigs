@@ -1589,6 +1589,8 @@ html,body{height:100%;overflow:hidden;background:var(--dark);font-family:'Plus J
 
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+
 // ============ FIREBASE CONFIG ============
 // Ganti dengan config Firebase project kamu!
 const firebaseConfig = {
@@ -2464,10 +2466,75 @@ if(sess){
   goPage('dashboard');
   startRealtimeListeners();
 }
+
+
+// Expose functions to global scope for onclick handlers
+window.getSession = getSession;
+window.setSession = setSession;
+window.clearSession = clearSession;
+window.fbGet = fbGet;
+window.fbSet = fbSet;
+window.fbUpdate = fbUpdate;
+window.fbPush = fbPush;
+window.fbRemove = fbRemove;
+window.fbTransaction = fbTransaction;
+window.showLoading = showLoading;
+window.hideLoading = hideLoading;
+window.genUID = genUID;
+window.switchAuthTab = switchAuthTab;
+window.togglePass = togglePass;
+window.checkStrength = checkStrength;
+window.doLogin = doLogin;
+window.doRegister = doRegister;
+window.startApp = startApp;
+window.startRealtimeListeners = startRealtimeListeners;
+window.objToArr = objToArr;
+window.stopRealtimeListeners = stopRealtimeListeners;
+window.updateUIFromSession = updateUIFromSession;
+window.goPage = goPage;
+window.openSidebar = openSidebar;
+window.closeSidebar = closeSidebar;
+window.switchWallet = switchWallet;
+window.updateWalletFields = updateWalletFields;
+window.selectAmt = selectAmt;
+window.doWithdraw = doWithdraw;
+window.confirmWithdraw = confirmWithdraw;
+window.renderHistory = renderHistory;
+window.sendMessage = sendMessage;
+window.updateDashStats = updateDashStats;
+window.renderNews = renderNews;
+window.toggleNewsLike = toggleNewsLike;
+window.toggleNewsPhotoInput = toggleNewsPhotoInput;
+window.postNews = postNews;
+window.deleteNews = deleteNews;
+window.renderOwnerNews = renderOwnerNews;
+window.changeUsername = changeUsername;
+window.renderSavedDana = renderSavedDana;
+window.saveDana = saveDana;
+window.deleteSavedDana = deleteSavedDana;
+window.loadWalletDanaSelect = loadWalletDanaSelect;
+window.applyDanaSelect = applyDanaSelect;
+window.openOwner = openOwner;
+window.closeOwner = closeOwner;
+window.renderOwner = renderOwner;
+window.renderOwnerMsgs = renderOwnerMsgs;
+window.renderOwnerWD = renderOwnerWD;
+window.showBalanceInput = showBalanceInput;
+window.ownerAcceptMsg = ownerAcceptMsg;
+window.ownerRejectMsg = ownerRejectMsg;
+window.ownerDoneWD = ownerDoneWD;
+window.ownerRejectWD = ownerRejectWD;
+window.confirmLogout = confirmLogout;
+window.closeModal = closeModal;
+window.doLogout = doLogout;
+window.showToast = showToast;
+
+}); // end DOMContentLoaded
+
 </script>
 
 
 
 </body>
 
-            </html>
+              </html>
