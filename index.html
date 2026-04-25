@@ -1600,8 +1600,16 @@ const firebaseConfig = {
   messagingSenderId: "980755337146",
   appId: "1:980755337146:web:2c37c9ebc6172a27f99783",
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+// Firebase init with error handling
+var _fbReady = false;
+var db = null;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+  _fbReady = true;
+} catch(e) {
+  console.error("Firebase init error:", e);
+}
 
 // ============ CONSTANTS ============
 const OWNER_USERNAME = 'Adeenzx';
@@ -1613,22 +1621,35 @@ function setSession(d){localStorage.setItem('roSession',JSON.stringify(d))}
 function clearSession(){localStorage.removeItem('roSession')}
 
 // ============ FIREBASE HELPERS ============
+function _fbCheck(){
+  if(!db||!_fbReady){
+    showToast('\u26a0\ufe0f Firebase belum terhubung! Cek config.');
+    return false;
+  }
+  return true;
+}
 function fbGet(path){
-  return db.ref(path).once('value').then(s=>s.val());
+  if(!_fbCheck())return Promise.resolve(null);
+  return db.ref(path).once('value').then(function(s){return s.val();});
 }
 function fbSet(path,val){
+  if(!_fbCheck())return Promise.resolve();
   return db.ref(path).set(val);
 }
 function fbUpdate(path,val){
+  if(!_fbCheck())return Promise.resolve();
   return db.ref(path).update(val);
 }
 function fbPush(path,val){
+  if(!_fbCheck())return Promise.resolve();
   return db.ref(path).push(val);
 }
 function fbRemove(path){
+  if(!_fbCheck())return Promise.resolve();
   return db.ref(path).remove();
 }
 function fbTransaction(path,fn){
+  if(!_fbCheck())return Promise.resolve();
   return db.ref(path).transaction(fn);
 }
 
@@ -1741,6 +1762,7 @@ function startApp(){
 // ============ REAL-TIME LISTENERS ============
 var _listeners=[];
 function startRealtimeListeners(){
+  if(!db||!_fbReady)return;
   // Clear old
   _listeners.forEach(function(fn){fn();});
   _listeners=[];
